@@ -101,7 +101,7 @@ Base.prototype.save = function (callback) {
     return callback(null, this);
   };
   
-  client._upsert(table, attributes, parseResult.bind(this))
+  client.upsert(table, attributes, parseResult.bind(this))
 };
 
 Base.prototype.destroy = function (callback) {
