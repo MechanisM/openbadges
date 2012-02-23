@@ -244,14 +244,14 @@ vows.describe('testing mysql').addBatch({
       'treat functions as generating objects': function () {
         var M = Base.extend({
           schema: { id: function (k) { return {
-            keySql: 'unique key (id)',
+            keysql: 'unique key (id)',
             validators: [],
             sup: true
           } } }
         });
         M.parseSchema();
         spec(M).id.sup.should.equal(true);
-        spec(M).id.keySql.should.equal('unique key (id)');
+        spec(M).id.keysql.should.equal('unique key (id)');
       },
       'handle higher order functions': function () {
         var hdlr = function () { return function () { return { sql: 'ya' } } };
@@ -497,8 +497,8 @@ vows.describe('testing mysql').addBatch({
             fn({unique: true});
           }, /key/)
           spec = fn({ unique: 128 });
-          assert.include(spec, 'keySql');
-          spec.keySql.should.equal('UNIQUE KEY (t(128))');
+          assert.include(spec, 'keysql');
+          spec.keysql.should.equal('UNIQUE KEY (t(128))');
         },
         'null/not null': function (fn) {
           var spec = fn('small', { null: false });
@@ -544,11 +544,11 @@ vows.describe('testing mysql').addBatch({
           var correct = {
             dependsOn: User,
             sql: "BIGINT",
-            keySql: "FOREIGN KEY `user_fkey` (`user_id`) REFERENCES `user` (`id`)"
+            keysql: "FOREIGN KEY `user_fkey` (`user_id`) REFERENCES `user` (`id`)"
           };
           s.dependsOn.should.equal(correct.dependsOn);
           s.sql.should.equal(correct.sql);
-          s.keySql.should.equal(correct.keySql);
+          s.keysql.should.equal(correct.keysql);
         },
       },
       'Base.Schema.Document': {
@@ -610,6 +610,24 @@ vows.describe('testing mysql').addBatch({
           var s = fn({ type: 'datetime' });
           s.sql.should.match(/^datetime$/i)
         }
+      }
+    },
+    '.createTableSql()': {
+      'combines things in the correct order': function () {
+        var M = Base.extend({
+          table: 'stuff',
+          engine: 'rad'
+        }, {
+          fieldspec: {
+            id: { sql: '1' },
+            email: { sql: '2' },
+            passwd: { sql: '3' },
+            rel: { sql: '4', keysql: 'related' },
+            rel2: { sql: '5', keysql: 'other related' }
+          }
+        });
+        var sql = M.createTableSql();
+        sql.should.equal('CREATE TABLE IF NOT EXISTS `stuff` (`id` 1, `email` 2, `passwd` 3, `rel` 4, `rel2` 5, related, other related) ENGINE = rad');
       }
     }
   }
