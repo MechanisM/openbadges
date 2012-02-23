@@ -407,8 +407,6 @@ vows.describe('testing mysql').addBatch({
           spec.sql.should.equal('DOUBLE');
           spec = f.Number({type: 'dOuBlE'});
           spec.sql.should.equal('DOUBLE');
-          spec = f.Number({size: 'dOuBlE'});
-          spec.sql.should.equal('DOUBLE');
         },
         'signed/unsigned': function (f) {
           var spec = f.Number('small', { unsigned: true });
@@ -503,6 +501,11 @@ vows.describe('testing mysql').addBatch({
           spec.validators[0].meta.name.should.equal('type.enum');
           spec = f.Enum({ values: ['bold'] });
           spec.sql.should.equal('ENUM ("bold")');
+        },
+        'null/not null': function (f) {
+          var spec = f.Enum(['yo', 'la', 'tengo'], { required: true });
+          assert.include(spec, 'validators');
+          spec.validators[0].should.equal(Base.Validators.Required);
         },
       }
     }
