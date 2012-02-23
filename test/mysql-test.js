@@ -393,65 +393,67 @@ vows.describe('testing mysql').addBatch({
         assert.include(spec.validators, Base.Validators.Type.Number);
       },
       'Base.Field.Number' : {
-        'standard fare': function (f) {
-          var spec = f.Number('n')();
+        topic: function (f) { return f.Number('n') },
+        'standard fare': function (fn) {
+          var spec = fn();
           spec.sql.should.equal('INT');
           assert.include(spec, 'validators');
           assert.include(spec.validators, Base.Validators.Type.Number);
         },
-        'big ones': function (f) {
-          var spec = f.Number('n')('big');
+        'big ones': function (fn) {
+          var spec = fn('big');
           spec.sql.should.equal('BIGINT');
         },
-        'small ones': function (f) {
-          var spec = f.Number('n')('small');
+        'small ones': function (fn) {
+          var spec = fn('small');
           spec.sql.should.equal('SMALLINT');
         },
-        'floats': function (f) {
-          var spec = f.Number('n')('float');
+        'floats': function (fn) {
+          var spec = fn('float');
           spec.sql.should.equal('FLOAT');
         },
-        'doubles': function (f) {
-          var spec = f.Number('n')('dOuBlE');
+        'doubles': function (fn) {
+          var spec = fn('dOuBlE');
           spec.sql.should.equal('DOUBLE');
-          spec = f.Number('n')({type: 'dOuBlE'});
+          spec = fn({type: 'dOuBlE'});
           spec.sql.should.equal('DOUBLE');
         },
-        'signed/unsigned': function (f) {
-          var spec = f.Number('n')('small', { unsigned: true });
+        'signed/unsigned': function (fn) {
+          var spec = fn('small', { unsigned: true });
           spec.sql.should.equal('SMALLINT UNSIGNED');
-          spec = f.Number('n')('small', { signed: false });
+          spec = fn('small', { signed: false });
           spec.sql.should.equal('SMALLINT UNSIGNED');
-          spec = f.Number('n')('small', { signed: true });
+          spec = fn('small', { signed: true });
           spec.sql.should.equal('SMALLINT SIGNED');
         },
-        'unique': function (f) {
-          var spec = f.Number('n')('small', { signed: false, unique: true });
+        'unique': function (fn) {
+          var spec = fn('small', { signed: false, unique: true });
           spec.sql.should.equal('SMALLINT UNSIGNED UNIQUE');
         },
-        'null/not null': function (f) {
-          var spec = f.Number('n')('small', { null: false });
+        'null/not null': function (fn) {
+          var spec = fn('small', { null: false });
           spec.sql.should.equal('SMALLINT NOT NULL');
           // #TODO: file bug with should.js about should.include not supporting objects
           spec.validators.should.include(Base.Validators.Required);
-          spec = f.Number('n')('small', { required: true });
+          spec = fn('small', { required: true });
           spec.sql.should.equal('SMALLINT NOT NULL');
           spec.validators.should.include(Base.Validators.Required);
         },
-        'default': function (f) {
-          var spec = f.Number('n')({ default: 10 });
+        'default': function (fn) {
+          var spec = fn({ default: 10 });
           spec.sql.should.equal('INT DEFAULT 10');
         },
       },
       'Base.Field.Text' : {
-        'standard fare': function (f) {
-          var spec = f.Text('t')();
+        topic: function (f) { return f.Text('t') },
+        'standard fare': function (fn) {
+          var spec = fn();
           spec.sql.should.equal('TEXT');
           assert.include(spec, 'validators');
           assert.include(spec.validators, Base.Validators.Type.Text);
         },
-        'varchar, positional': function (f) {
-          var spec = f.Text('t')(28);
+        'varchar, positional': function (fn) {
+          var spec = fn(28);
           spec.sql.should.equal('VARCHAR(28)');
           assert.include(spec, 'validators');
           assert.include(spec.validators, Base.Validators.Type.Text);
@@ -459,69 +461,72 @@ vows.describe('testing mysql').addBatch({
           spec.validators[1].meta.name.should.equal('length');
           spec.validators[1].meta.max.should.equal(28);
         },
-        'varchar, named': function (f) {
-          var spec = f.Text('t')({size: 28});
+        'varchar, named': function (fn) {
+          var spec = fn({size: 28});
           spec.sql.should.equal('VARCHAR(28)');
         },
-        'char': function (f) {
-          var spec = f.Text('t')({size: 28, type: 'char'});
+        'char': function (fn) {
+          var spec = fn({size: 28, type: 'char'});
           spec.sql.should.equal('CHAR(28)');
         },
-        'char without size throws error': function (f) {
+        'char without size throws error': function (fn) {
           assert.throws(function () {
-            f.Text('t')({type: 'char', boner: 'fist'});
+            fn({type: 'char', boner: 'fist'});
           }, /type mismatch.*/);
         },
-        'longtext': function (f) {
-          var spec = f.Text('t')({size: 'long', type: 'text'});
+        'longtext': function (fn) {
+          var spec = fn({size: 'long', type: 'text'});
           spec.sql.should.equal('LONGTEXT');
-          spec = f.Text('t')({size: 'long'});
+          spec = fn({size: 'long'});
           spec.sql.should.equal('LONGTEXT');
-          spec = f.Text('t')('long');
+          spec = fn('long');
           spec.sql.should.equal('LONGTEXT');
         },
-        'tinytext': function (f) {
-          var spec = f.Text('t')({size: 'tiny', type: 'text'});
+        'tinytext': function (fn) {
+          var spec = fn({size: 'tiny', type: 'text'});
           spec.sql.should.equal('TINYTEXT');
-          spec = f.Text('t')({size: 'tiny'});
+          spec = fn({size: 'tiny'});
           spec.sql.should.equal('TINYTEXT');
-          spec = f.Text('t')('tiny');
+          spec = fn('tiny');
           spec.sql.should.equal('TINYTEXT');
         },
-        'unique': function (f) {
-          var spec = f.Text('t')(21, {unique: true});
+        'unique': function (fn) {
+          var spec = fn(21, {unique: true});
           spec.sql.should.equal('VARCHAR(21) UNIQUE');
           assert.throws(function () {
-            f.Text('t')({unique: true});
+            fn({unique: true});
           }, /key/)
-          spec = f.Text('t')({ unique: 128 });
+          spec = fn({ unique: 128 });
           assert.include(spec, 'keySql');
           spec.keySql.should.equal('UNIQUE KEY (t(128))');
         },
-        'null/not null': function (f) {
-          var spec = f.Text('t')('small', { null: false });
+        'null/not null': function (fn) {
+          var spec = fn('small', { null: false });
           spec.sql.should.equal('SMALLTEXT NOT NULL');
-          spec = f.Text('t')({ required: true });
+          
+          spec = fn({ required: true });
           spec.sql.should.equal('TEXT NOT NULL');
           spec.validators.should.include(Base.Validators.Required);
         }
       },
       'Base.Field.Enum' : {
-        'standard fare': function (f) {
-          var spec = f.Enum('e')(['green', 'eggs', 'ham']);
+        topic: function (f) { return f.Enum('e') },
+        'standard fare': function (fn) {
+          var spec = fn(['green', 'eggs', 'ham']);
           spec.sql.should.equal('ENUM ("green", "eggs", "ham")');
           assert.include(spec, 'validators');
           spec.validators[0].meta.name.should.equal('type.enum');
-          spec = f.Enum('e')({ values: ['bold'] });
+          
+          spec = fn({ values: ['bold'] });
           spec.sql.should.equal('ENUM ("bold")');
         },
-        'null/not null': function (f) {
-          var spec = f.Enum('e')(['yo', 'la', 'tengo'], { required: true });
+        'null/not null': function (fn) {
+          var spec = fn(['yo', 'la', 'tengo'], { required: true });
           assert.include(spec, 'validators');
           spec.validators[0].should.equal(Base.Validators.Required);
         },
-        'default': function (f) {
-          var spec = f.Enum('e')(['yo', 'la', 'tengo'], { default: 'tengo' });
+        'default': function (fn) {
+          var spec = fn(['yo', 'la', 'tengo'], { default: 'tengo' });
           spec.sql.should.equal('ENUM ("yo", "la", "tengo") DEFAULT "tengo"');
         }
       },
@@ -545,6 +550,66 @@ vows.describe('testing mysql').addBatch({
           s.sql.should.equal(correct.sql);
           s.keySql.should.equal(correct.keySql);
         },
+      },
+      'Base.Field.Document': {
+        topic: function (f) { return f.Document('assertion') },
+        'basic test' : function (fn) {
+          function intta (s) { return s; }
+          function outta (s) { return s; }
+          var s = fn({
+            serializer:   intta,
+            deserializer: outta
+          });
+          var correct = {
+            sql: "BLOB",
+            validators: [Base.Validators.Serializable(intta)],
+            mutators: { storage: intta, retrieval: outta }
+          };
+          s.sql.should.equal(correct.sql);
+          should.exist(s.mutators);
+          s.mutators.storage.should.equal(correct.mutators.storage);
+          s.mutators.retrieval.should.equal(correct.mutators.retrieval);
+          s.validators[0].meta.name.should.equal('serializable');
+          s.validators[0].meta.serializer.should.equal(correct.mutators.storage);
+        },
+        'should default to JSON' : function (fn) {
+          var s = fn();
+          s.mutators.storage.should.equal(JSON.stringify);
+          s.mutators.retrieval.should.equal(JSON.parse);
+          s.validators[0].meta.name.should.equal('serializable');
+          s.validators[0].meta.serializer.should.equal(JSON.stringify);
+        },
+        'null/not null' : function (fn) {
+          var s = fn({required: true})
+          s.sql.should.match(/not null/i);
+          s.validators[0].should.equal(Base.Validators.Required);
+        },
+      },
+      'Base.Field.Boolean': {
+        topic: function (f) { return f.Boolean('demo') },
+        'basic' : function (fn) {
+          var s = fn();
+          s.sql.should.match(/^boolean$/i)
+        },
+        'should respect defaults' : function (fn) {
+          var s = fn({ default: 1 });
+          s.sql.should.match(/default 1/i)
+        }
+      },
+      'Base.Field.Timestamp': {
+        topic: function (f) { return f.Time('unix') },
+        'basic' : function (fn) {
+          var s = fn();
+          s.sql.should.match(/^timestamp$/i)
+        },
+        'should respect defaults' : function (fn) {
+          var s = fn({ default: 'CURRENT_TIMESTAMP' });
+          s.sql.should.match(/current_timestamp/i)
+        },
+        'should respect type' : function (fn) {
+          var s = fn({ type: 'datetime' });
+          s.sql.should.match(/^datetime$/i)
+        }
       }
     }
   }
