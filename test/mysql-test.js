@@ -3,16 +3,13 @@ var vows = require('vows')
   , should = require('should')
   , mysql = require('../lib/mysql')
   , client = mysql.client
-  , conf = require('../lib/configuration').get('database')
-  , testDb = conf.database + "_test";
+  , Base = mysql.Base
 
-Object.values = function (obj) { return Object.keys(obj).map(function (k) { return obj[k]; }) };
-var extractFirstValues = function (arr) { return arr.map(function (a) { return Object.values(a).pop(); }) }
-var toObj = function (arr) { var r = {}; arr.forEach(function (a) { r[a] = 1; }); return r; }
 var qs = function (s) { return s.qs.join(' ') };
+var spec = function (m) { return m._fieldspec };
 
 mysql.prepareTesting();
-vows.describe('testing mysql base').addBatch({
+vows.describe('testing mysql').addBatch({
   'client select basics': {
     'exists' : function () {
       assert.isFunction(client.select);
@@ -186,4 +183,114 @@ vows.describe('testing mysql base').addBatch({
       res[0].should.have.property('great');
     }
   },
+}).addBatch({
+  'Base': {
+    'exists': function () { should.exist(Base) },
+    '.extend': {
+      'exists and is function': function () {
+        should.exist(Base.extend);
+        assert.isFunction(Base.extend);
+      },
+      'creates a new function': function () {
+        var M = Base.extend({});
+        assert.isFunction(M);
+        assert.isFunction((new M).save)
+      },
+      'stores stuff': function () {
+        var m = new (Base.extend({hey: 'sup'}));
+        m.hey.should.equal('sup');
+      },
+    },
+    'default': {
+      'driver is mysql': function () {
+        var m = new (Base.extend({}));
+        m.driver.should.equal('mysql');
+      
+        m = new (Base.extend({driver: 'postgres'}))
+        m.driver.should.equal('postgres');
+      },
+      'engine is InnoDB': function () {
+        var m = new (Base.extend({}));
+        m.engine.should.equal('InnoDB');
+      }
+    },
+    '#_parseSchema should': {
+      'error on missing schema': function () {
+        var m = new (Base.extend({}));
+        assert.throws(function () {
+          m._parseSchema();
+        }, Error);
+      },
+      'error on invalid schema type': function () {
+        var m = new (Base.extend({schema: 'hey yo'}));
+        assert.throws(function () {
+          m._parseSchema();
+        }, TypeError);
+      },
+      'handle strings as raw sql': function () {
+        var m = new (Base.extend({
+          schema: { id: 'BIGINT AUTO_INCREMENT PRIMARY KEY' }
+        }));
+        m._parseSchema();
+        spec(m).id.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
+      },
+      'treat functions as generating objects': function () {
+        var m = new (Base.extend({
+          schema: {
+            id: function () { return {sql: 'ya', validators: [], sup: true }; }
+          }
+        }));
+        m._parseSchema();
+        spec(m).id.sup.should.equal(true);
+        spec(m).id.sql.should.equal('ya');
+      },
+      'handle higher order functions': function () {
+        var hdlr = function () { return function () { return {sql: 'ya' } } };
+        hdlr.higherOrder = true;
+        var m = new (Base.extend({
+          schema: { id: hdlr }
+        }));
+        m._parseSchema();
+        spec(m).id.sql.should.equal('ya');
+      }
+    },
+    '#_addValidators should' : {
+      'exit gracefully when there are no validators' : function () {
+        var m = new (Base.extend({
+          _fieldspec: {id: { validators: ['sup']}}
+        }));
+        m._addValidators();
+        spec(m).id.validators.should.include('sup');
+      },
+      'handle array of validators' : function () {
+        var m = new (Base.extend({
+          validators: {
+            id: ['zero', 'one']
+          }
+        }));
+        m._addValidators();
+        spec(m).id.validators[0].should.equal('zero');
+        spec(m).id.validators[1].should.equal('one');
+      },
+      'handle a single validators' : function () {
+        var m = new (Base.extend({
+          validators: { id: 'zero' }
+        }));
+        m._addValidators();
+        spec(m).id.validators[0].should.equal('zero');
+      },
+      'add new validators at the end' : function () {
+        var m = new (Base.extend({
+          _fieldspec: {id: { validators: ['sup']}},
+          validators: { id: ['new', 'another'] }
+        }));
+        m._addValidators();
+        spec(m).id.validators.should.have.lengthOf(3);
+        spec(m).id.validators[0].should.equal('sup');
+        spec(m).id.validators[1].should.equal('new');
+        spec(m).id.validators[2].should.equal('another');
+      }
+    }
+  }
+  
 }).export(module);
