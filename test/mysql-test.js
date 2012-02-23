@@ -483,6 +483,9 @@ vows.describe('testing mysql').addBatch({
           assert.throws(function () {
             f.Text({unique: true});
           }, /key/)
+          spec = f.Text({ unique: 128 });
+          assert.include(spec, 'keySql');
+          spec.keySql.should.equal('UNIQUE KEY (%s(128))');
         },
         'null/not null': function (f) {
           var spec = f.Text('small', { null: false });
