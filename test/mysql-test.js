@@ -395,74 +395,77 @@ vows.describe('testing mysql').addBatch({
     'schema helpers': {
       topic: Base.Schema,
       'Base.Schema.Id' : function (f) {
-        var spec = f.Id('id')();
+        var spec = f.Id()('id');
         assert.include(spec, 'sql');
         spec.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
         assert.include(spec, 'validators');
         assert.include(spec.validators, Base.Validators.Type.Number);
       },
       'Base.Schema.Number' : {
-        topic: function (f) { return f.Number('n') },
-        'standard fare': function (fn) {
-          var spec = fn();
+        'standard fare': function (s) {
+          var spec = s.Number()();
           spec.sql.should.equal('INT');
           assert.include(spec, 'validators');
           assert.include(spec.validators, Base.Validators.Type.Number);
         },
-        'big ones': function (fn) {
-          var spec = fn('big');
+        'big ones': function (s) {
+          var spec = s.Number('big')();
           spec.sql.should.equal('BIGINT');
         },
-        'small ones': function (fn) {
-          var spec = fn('small');
+        'small ones': function (s) {
+          var spec = s.Number('small')();
           spec.sql.should.equal('SMALLINT');
         },
-        'floats': function (fn) {
-          var spec = fn('float');
+        'floats': function (s) {
+          var spec = s.Number('float')();
           spec.sql.should.equal('FLOAT');
         },
-        'doubles': function (fn) {
-          var spec = fn('dOuBlE');
+        'doubles': function (s) {
+          var spec = s.Number('dOuBlE')();
           spec.sql.should.equal('DOUBLE');
-          spec = fn({type: 'dOuBlE'});
+          
+          spec = s.Number({type: 'dOuBlE'})();
           spec.sql.should.equal('DOUBLE');
         },
-        'signed/unsigned': function (fn) {
-          var spec = fn('small', { unsigned: true });
+        'signed/unsigned': function (s) {
+          var spec = s.Number('small', { unsigned: true })();
           spec.sql.should.equal('SMALLINT UNSIGNED');
-          spec = fn('small', { signed: false });
+          
+          spec = s.Number('small', { signed: false })();
           spec.sql.should.equal('SMALLINT UNSIGNED');
-          spec = fn('small', { signed: true });
+          
+          spec = s.Number('small', { signed: true })();
           spec.sql.should.equal('SMALLINT SIGNED');
         },
-        'unique': function (fn) {
-          var spec = fn('small', { signed: false, unique: true });
+        'unique': function (s) {
+          var spec = s.Number('small', { signed: false, unique: true })();
           spec.sql.should.equal('SMALLINT UNSIGNED UNIQUE');
         },
-        'null/not null': function (fn) {
-          var spec = fn('small', { null: false });
+        'null/not null': function (s) {
+          var spec = s.Number('small', { null: false })();
           spec.sql.should.equal('SMALLINT NOT NULL');
           // #TODO: file bug with should.js about should.include not supporting objects
           spec.validators.should.include(Base.Validators.Required);
-          spec = fn('small', { required: true });
+          
+          spec = s.Number('small', { required: true })();
           spec.sql.should.equal('SMALLINT NOT NULL');
           spec.validators.should.include(Base.Validators.Required);
         },
-        'default': function (fn) {
-          var spec = fn({ default: 10 });
+        'default': function (s) {
+          var spec = s.Number({ default: 10 })();
           spec.sql.should.equal('INT DEFAULT 10');
         },
       },
       'Base.Schema.String' : {
-        topic: function (f) { return f.String('t') },
-        'standard fare': function (fn) {
-          var spec = fn();
+        //topic: function (f) { return f.String('t') },
+        'standard fare': function (s) {
+          var spec = s.String()();
           spec.sql.should.equal('TEXT');
           assert.include(spec, 'validators');
           assert.include(spec.validators, Base.Validators.Type.String);
         },
-        'varchar, positional': function (fn) {
-          var spec = fn(28);
+        'varchar, positional': function (s) {
+          var spec = s.String(28)();
           spec.sql.should.equal('VARCHAR(28)');
           assert.include(spec, 'validators');
           assert.include(spec.validators, Base.Validators.Type.String);
@@ -470,154 +473,160 @@ vows.describe('testing mysql').addBatch({
           spec.validators[1].meta.name.should.equal('length');
           spec.validators[1].meta.max.should.equal(28);
         },
-        'varchar, named': function (fn) {
-          var spec = fn({size: 28});
+        'varchar, named': function (s) {
+          var spec = s.String({size: 28})();
           spec.sql.should.equal('VARCHAR(28)');
         },
-        'char': function (fn) {
-          var spec = fn({size: 28, type: 'char'});
+        'char': function (s) {
+          var spec = s.String({size: 28, type: 'char'})();
           spec.sql.should.equal('CHAR(28)');
         },
-        'char without size throws error': function (fn) {
+        'blob': function (s) {
+          var spec = s.String({type: 'blob'})();
+          spec.sql.should.equal('BLOB');
+        },
+        'char without size throws error': function (s) {
           assert.throws(function () {
-            fn({type: 'char', boner: 'fist'});
+            s.String({type: 'char'})();
           }, /type mismatch.*/);
         },
-        'longtext': function (fn) {
-          var spec = fn({size: 'long', type: 'text'});
+        'longtext': function (s) {
+          var spec = s.String({size: 'long', type: 'text'})();
           spec.sql.should.equal('LONGTEXT');
-          spec = fn({size: 'long'});
+          
+          spec = s.String({size: 'long'})();
           spec.sql.should.equal('LONGTEXT');
-          spec = fn('long');
+          
+          spec = s.String('long')();
           spec.sql.should.equal('LONGTEXT');
         },
-        'tinytext': function (fn) {
-          var spec = fn({size: 'tiny', type: 'text'});
+        'tinytext': function (s) {
+          var spec = s.String({size: 'tiny', type: 'text'})();
           spec.sql.should.equal('TINYTEXT');
-          spec = fn({size: 'tiny'});
+          spec = s.String({size: 'tiny'})();
           spec.sql.should.equal('TINYTEXT');
-          spec = fn('tiny');
+          spec = s.String('tiny')();
           spec.sql.should.equal('TINYTEXT');
         },
-        'unique': function (fn) {
-          var spec = fn(21, {unique: true});
+        'unique with length': function (s) {
+          var spec = s.String(21, {unique: true})('t');
           spec.sql.should.equal('VARCHAR(21) UNIQUE');
+          
           assert.throws(function () {
-            fn({unique: true});
+            s.String({unique: true})('t');
           }, /key/)
-          spec = fn({ unique: 128 });
+          
+          spec = s.String({ unique: 128 })('t');
           assert.include(spec, 'keysql');
           spec.keysql.should.equal('UNIQUE KEY (t(128))');
         },
-        'null/not null': function (fn) {
-          var spec = fn('small', { null: false });
+        'null/not null': function (s) {
+          var spec = s.String('small', { null: false })();
           spec.sql.should.equal('SMALLTEXT NOT NULL');
           
-          spec = fn({ required: true });
+          spec = s.String({ required: true })();
           spec.sql.should.equal('TEXT NOT NULL');
           spec.validators.should.include(Base.Validators.Required);
         }
       },
       'Base.Schema.Enum' : {
-        topic: function (f) { return f.Enum('e') },
-        'standard fare': function (fn) {
-          var spec = fn(['green', 'eggs', 'ham']);
+        'standard fare': function (s) {
+          var spec = s.Enum(['green', 'eggs', 'ham'])();
           spec.sql.should.equal('ENUM ("green", "eggs", "ham")');
           assert.include(spec, 'validators');
           spec.validators[0].meta.name.should.equal('type.enum');
           
-          spec = fn({ values: ['bold'] });
+          spec = s.Enum({ values: ['bold'] })();
           spec.sql.should.equal('ENUM ("bold")');
         },
-        'null/not null': function (fn) {
-          var spec = fn(['yo', 'la', 'tengo'], { required: true });
+        'null/not null': function (s) {
+          var spec = s.Enum(['yo', 'la', 'tengo'], { required: true })();
           assert.include(spec, 'validators');
           spec.validators[0].should.equal(Base.Validators.Required);
         },
-        'default': function (fn) {
-          var spec = fn(['yo', 'la', 'tengo'], { default: 'tengo' });
+        'default': function (s) {
+          var spec = s.Enum(['yo', 'la', 'tengo'], { default: 'tengo' })();
           spec.sql.should.equal('ENUM ("yo", "la", "tengo") DEFAULT "tengo"');
         }
       },
       'Base.Schema.Foreign' : {
-        'basic test' : function (f) {
+        'basic test' : function (s) {
           var User = Base.extend({
             table: 'user',
             schema: { id : 'BIGINT AUTO_INCREMENT PRIMARY KEY' }
           })
           User.parseSchema();
-          var s = f.Foreign('user_id')({
+          
+          var ss = s.Foreign({
             model: User,
             field: 'id'
-          });
+          })('user_id');
+          
           var correct = {
             dependsOn: User,
             sql: "BIGINT",
             keysql: "FOREIGN KEY `user_fkey` (`user_id`) REFERENCES `user` (`id`)"
           };
-          s.dependsOn.should.equal(correct.dependsOn);
-          s.sql.should.equal(correct.sql);
-          s.keysql.should.equal(correct.keysql);
+          ss.dependsOn.should.equal(correct.dependsOn);
+          ss.sql.should.equal(correct.sql);
+          ss.keysql.should.equal(correct.keysql);
         },
       },
       'Base.Schema.Document': {
-        topic: function (f) { return f.Document('assertion') },
-        'basic test' : function (fn) {
-          function intta (s) { return s; }
-          function outta (s) { return s; }
-          var s = fn({
+        'basic test' : function (s) {
+          function intta (v) { return v; }
+          function outta (v) { return v; }
+          var ss = s.Document({
             serializer:   intta,
             deserializer: outta
-          });
+          })();
           var correct = {
             sql: "BLOB",
             validators: [Base.Validators.Serializable(intta)],
             mutators: { storage: intta, retrieval: outta }
           };
-          s.sql.should.equal(correct.sql);
-          should.exist(s.mutators);
-          s.mutators.storage.should.equal(correct.mutators.storage);
-          s.mutators.retrieval.should.equal(correct.mutators.retrieval);
-          s.validators[0].meta.name.should.equal('serializable');
-          s.validators[0].meta.serializer.should.equal(correct.mutators.storage);
+          ss.sql.should.equal(correct.sql);
+          should.exist(ss.mutators);
+          ss.mutators.storage.should.equal(correct.mutators.storage);
+          ss.mutators.retrieval.should.equal(correct.mutators.retrieval);
+          ss.validators[0].meta.name.should.equal('serializable');
+          ss.validators[0].meta.serializer.should.equal(correct.mutators.storage);
         },
-        'should default to JSON' : function (fn) {
-          var s = fn();
-          s.mutators.storage.should.equal(JSON.stringify);
-          s.mutators.retrieval.should.equal(JSON.parse);
-          s.validators[0].meta.name.should.equal('serializable');
-          s.validators[0].meta.serializer.should.equal(JSON.stringify);
+        'should default to JSON' : function (s) {
+          var ss = s.Document()();
+          ss.mutators.storage.should.equal(JSON.stringify);
+          ss.mutators.retrieval.should.equal(JSON.parse);
+          ss.validators[0].meta.name.should.equal('serializable');
+          ss.validators[0].meta.serializer.should.equal(JSON.stringify);
         },
-        'null/not null' : function (fn) {
-          var s = fn({required: true})
-          s.sql.should.match(/not null/i);
-          s.validators[0].should.equal(Base.Validators.Required);
+        'null/not null' : function (s) {
+          var ss = s.Document({required: true})();
+          ss.sql.should.match(/not null/i);
+          ss.validators[0].should.equal(Base.Validators.Required);
         },
       },
       'Base.Schema.Boolean': {
-        topic: function (f) { return f.Boolean('demo') },
-        'basic' : function (fn) {
-          var s = fn();
-          s.sql.should.match(/^boolean$/i)
+        'basic' : function (s) {
+          var ss = s.Boolean()();
+          ss.sql.should.match(/^boolean$/i)
         },
-        'should respect defaults' : function (fn) {
-          var s = fn({ default: 1 });
-          s.sql.should.match(/default 1/i)
+        'should respect defaults' : function (s) {
+          var ss = s.Boolean({ default: 1 })();
+          ss.sql.should.match(/default 1/i)
         }
       },
       'Base.Schema.Timestamp': {
-        topic: function (f) { return f.Time('unix') },
-        'basic' : function (fn) {
-          var s = fn();
-          s.sql.should.match(/^timestamp$/i)
+        'basic' : function (s) {
+          var ss = s.Time()();
+          ss.sql.should.match(/^timestamp$/i)
         },
-        'should respect defaults' : function (fn) {
-          var s = fn({ default: 'CURRENT_TIMESTAMP' });
-          s.sql.should.match(/current_timestamp/i)
+        'should respect defaults' : function (s) {
+          var ss = s.Time({ default: 'CURRENT_TIMESTAMP' })();
+          ss.sql.should.match(/current_timestamp/i)
         },
-        'should respect type' : function (fn) {
-          var s = fn({ type: 'datetime' });
-          s.sql.should.match(/^datetime$/i)
+        'should respect type' : function (s) {
+          var ss = s.Time({ type: 'datetime' })();
+          ss.sql.should.match(/^datetime$/i)
         }
       }
     },
@@ -643,6 +652,24 @@ vows.describe('testing mysql').addBatch({
         });
         var sql = M.createTableSql();
         sql.should.equal('CREATE TABLE IF NOT EXISTS `stuff` (`id` 1, `email` 2, `passwd` 3, `rel` 4, `rel2` 5, related, other related) ENGINE = rad');
+      }
+    },
+    '.makeTable': {
+      'simple table' : {
+        topic: function () {
+          var M = Base.extend({
+            schema: {
+              id: Base.Schema.Id,
+              name: Base.Schema.String
+            }
+          });
+//          M.parseSchema();
+//          console.dir(M.fieldspec);
+          return M;
+        },
+        'should not error': function () {
+          assert.ok();
+        }
       }
     }
   }
