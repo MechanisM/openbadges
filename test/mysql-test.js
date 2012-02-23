@@ -6,7 +6,7 @@ var vows = require('vows')
   , Base = mysql.Base
 
 var qs = function (s) { return s.qs.join(' ') };
-var spec = function (m) { return m._fieldspec };
+var spec = function (m) { return m.fieldspec };
 
 mysql.prepareTesting();
 vows.describe('testing mysql').addBatch({
@@ -214,7 +214,7 @@ vows.describe('testing mysql').addBatch({
         m.engine.should.equal('InnoDB');
       }
     },
-    '#_parseSchema should': {
+    '.parseSchema should': {
       'error on missing schema': function () {
         var m = new (Base.extend({}));
         assert.throws(function () {
@@ -228,67 +228,64 @@ vows.describe('testing mysql').addBatch({
         }, TypeError);
       },
       'handle strings as raw sql': function () {
-        var m = new (Base.extend({
+        var M = Base.extend({
           schema: { id: 'BIGINT AUTO_INCREMENT PRIMARY KEY' }
-        }));
-        m._parseSchema();
-        spec(m).id.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
+        });
+        M.parseSchema();
+        spec(M).id.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
       },
       'treat functions as generating objects': function () {
-        var m = new (Base.extend({
+        var M = Base.extend({
           schema: {
             id: function () { return {sql: 'ya', validators: [], sup: true }; }
           }
-        }));
-        m._parseSchema();
-        spec(m).id.sup.should.equal(true);
-        spec(m).id.sql.should.equal('ya');
+        });
+        M.parseSchema();
+        spec(M).id.sup.should.equal(true);
+        spec(M).id.sql.should.equal('ya');
       },
       'handle higher order functions': function () {
         var hdlr = function () { return function () { return {sql: 'ya' } } };
         hdlr.higherOrder = true;
-        var m = new (Base.extend({
+        var M = Base.extend({
           schema: { id: hdlr }
-        }));
-        m._parseSchema();
-        spec(m).id.sql.should.equal('ya');
+        });
+        M.parseSchema();
+        spec(M).id.sql.should.equal('ya');
       }
     },
-    '#_addValidators should' : {
+    '.addValidators should' : {
       'exit gracefully when there are no validators' : function () {
-        var m = new (Base.extend({
-          _fieldspec: {id: { validators: ['sup']}}
-        }));
-        m._addValidators();
-        spec(m).id.validators.should.include('sup');
+        var M = Base.extend({}, {
+          fieldspec: { id: { validators: ['sup']} }
+        });
+        M.addValidators();
+        spec(M).id.validators.should.include('sup');
       },
       'handle array of validators' : function () {
-        var m = new (Base.extend({
-          validators: {
-            id: ['zero', 'one']
-          }
-        }));
-        m._addValidators();
-        spec(m).id.validators[0].should.equal('zero');
-        spec(m).id.validators[1].should.equal('one');
+        var M = Base.extend({
+          validators: { id: ['zero', 'one'] }
+        });
+        M.addValidators();
+        spec(M).id.validators[0].should.equal('zero');
+        spec(M).id.validators[1].should.equal('one');
       },
       'handle a single validators' : function () {
-        var m = new (Base.extend({
-          validators: { id: 'zero' }
-        }));
-        m._addValidators();
-        spec(m).id.validators[0].should.equal('zero');
+        var M = Base.extend({ validators: { id: 'zero' } });
+        M.addValidators();
+        spec(M).id.validators[0].should.equal('zero');
       },
       'add new validators at the end' : function () {
-        var m = new (Base.extend({
-          _fieldspec: {id: { validators: ['sup']}},
+        var M = Base.extend({
           validators: { id: ['new', 'another'] }
-        }));
-        m._addValidators();
-        spec(m).id.validators.should.have.lengthOf(3);
-        spec(m).id.validators[0].should.equal('sup');
-        spec(m).id.validators[1].should.equal('new');
-        spec(m).id.validators[2].should.equal('another');
+        }, {
+          fieldspec: {id: { validators: ['sup']}}
+        });
+        M.addValidators();
+        spec(M).id.validators.should.have.lengthOf(3);
+        spec(M).id.validators[0].should.equal('sup');
+        spec(M).id.validators[1].should.equal('new');
+        spec(M).id.validators[2].should.equal('another');
       }
     }
   }
