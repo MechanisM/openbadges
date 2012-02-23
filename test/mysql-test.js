@@ -428,7 +428,11 @@ vows.describe('testing mysql').addBatch({
           spec = f.Number('small', { required: true });
           spec.sql.should.equal('SMALLINT NOT NULL');
           spec.validators.should.include(Base.Validators.Required);
-        }
+        },
+        'default': function (f) {
+          var spec = f.Number({ default: 10 });
+          spec.sql.should.equal('INT DEFAULT 10');
+        },
       },
       'Base.Field.Text' : {
         'standard fare': function (f) {
@@ -506,6 +510,10 @@ vows.describe('testing mysql').addBatch({
           var spec = f.Enum(['yo', 'la', 'tengo'], { required: true });
           assert.include(spec, 'validators');
           spec.validators[0].should.equal(Base.Validators.Required);
+        },
+        'default': function (f) {
+          var spec = f.Enum(['yo', 'la', 'tengo'], { default: 'tengo' });
+          spec.sql.should.equal('ENUM ("yo", "la", "tengo") DEFAULT "tengo"');
         },
       }
     }
