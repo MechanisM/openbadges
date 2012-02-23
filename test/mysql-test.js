@@ -216,16 +216,16 @@ vows.describe('testing mysql').addBatch({
     },
     '.parseSchema should': {
       'error on missing schema': function () {
-        var m = new (Base.extend({}));
+        var M = Base.extend({});
         assert.throws(function () {
-          m._parseSchema();
-        }, Error);
+          M.parseSchema();
+        }, /schema/);
       },
       'error on invalid schema type': function () {
-        var m = new (Base.extend({schema: 'hey yo'}));
+        var M = Base.extend({schema: 'hey yo'});
         assert.throws(function () {
-          m._parseSchema();
-        }, TypeError);
+          M.parseSchema();
+        }, /schema/);
       },
       'handle strings as raw sql': function () {
         var M = Base.extend({
@@ -234,15 +234,24 @@ vows.describe('testing mysql').addBatch({
         M.parseSchema();
         spec(M).id.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
       },
+      'pass through objects': function () {
+        var M = Base.extend({
+          schema: { id: { sql: 'BIGINT AUTO_INCREMENT PRIMARY KEY' } }
+        });
+        M.parseSchema();
+        spec(M).id.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
+      },
       'treat functions as generating objects': function () {
         var M = Base.extend({
-          schema: {
-            id: function () { return { sql: 'ya', validators: [], sup: true }; }
-          }
+          schema: { id: function (k) { return {
+            keySql: 'unique key (id)',
+            validators: [],
+            sup: true
+          } } }
         });
         M.parseSchema();
         spec(M).id.sup.should.equal(true);
-        spec(M).id.sql.should.equal('ya');
+        spec(M).id.keySql.should.equal('unique key (id)');
       },
       'handle higher order functions': function () {
         var hdlr = function () { return function () { return { sql: 'ya' } } };
@@ -252,7 +261,7 @@ vows.describe('testing mysql').addBatch({
         });
         M.parseSchema();
         spec(M).id.sql.should.equal('ya');
-      }
+      },
     },
     '.addValidators should' : {
       'exit gracefully when there are no validators' : function () {
@@ -515,7 +524,15 @@ vows.describe('testing mysql').addBatch({
           var spec = f.Enum(['yo', 'la', 'tengo'], { default: 'tengo' });
           spec.sql.should.equal('ENUM ("yo", "la", "tengo") DEFAULT "tengo"');
         },
-      }
+      },
+      
+      'Base.Field.Foreign' : function (f) {
+        var User = Base.extend({
+          schema: { id : 'BIGINT AUTO_INCREMENT PRIMARY KEY' }
+        })
+        User.parseSchema();
+      },
+    
     }
   }
 }).export(module);
