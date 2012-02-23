@@ -494,6 +494,16 @@ vows.describe('testing mysql').addBatch({
           spec.sql.should.equal('TEXT NOT NULL');
           spec.validators.should.include(Base.Validators.Required);
         }
+      },
+      'Base.Field.Enum' : {
+        'standard fare': function (f) {
+          var spec = f.Enum(['green', 'eggs', 'ham']);
+          spec.sql.should.equal('ENUM ("green", "eggs", "ham")');
+          assert.include(spec, 'validators');
+          spec.validators[0].meta.name.should.equal('type.enum');
+          spec = f.Enum({ values: ['bold'] });
+          spec.sql.should.equal('ENUM ("bold")');
+        },
       }
     }
   }
