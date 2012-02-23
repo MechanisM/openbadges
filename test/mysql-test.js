@@ -289,21 +289,21 @@ vows.describe('testing mysql').addBatch({
       }
     },
     'validator helpers': {
-      topic: Base.Validate,
-      'Base.Validate.Required': function (v) {
+      topic: Base.Validators,
+      'Base.Validators.Required': function (v) {
         should.exist(v.Required);
         assert.throws(function () { v.Required(null) }, /REQUIRED/)
         assert.doesNotThrow(function () { v.Required('rad') })
         assert.isFunction(v.Required()()())
       },
-      'Base.Validate.Required.when': function (v) {
+      'Base.Validators.Required.when': function (v) {
         should.exist(v.Required.when);
         var val = v.Required.when({field:'type', is:'signed'});
         assert.isFunction(val);
         assert.throws(function () { val(null, {type: 'signed'}) }, /REQUIRED-WHEN/)
         assert.doesNotThrow(function () { val(true, {type: 'signed'}) })
       },
-      'Base.Validate.Length (positional)' : function (v) {
+      'Base.Validators.Length (positional)' : function (v) {
         should.exist(v.Length);
         var val = v.Length(4);
         assert.isFunction(val);
@@ -311,7 +311,7 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val('123') }, /LENGTH/);
         assert.doesNotThrow(function () { val(undefined) })
       },
-      'Base.Validate.Length (named)' : function (v) {
+      'Base.Validators.Length (named)' : function (v) {
         should.exist(v.Length);
         var val = v.Length({min: 2, max: 4});
         assert.isFunction(val);
@@ -321,7 +321,7 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val('12') });
         assert.doesNotThrow(function () { val(undefined) })
       },
-      'Base.Validate.Serializable' : function (v) {
+      'Base.Validators.Serializable' : function (v) {
         should.exist(v.Serializable);
         var val = v.Serializable(JSON.stringify);
         assert.isFunction(val);
@@ -331,7 +331,7 @@ vows.describe('testing mysql').addBatch({
         });
         assert.doesNotThrow(function () { val(undefined) })
       },
-      'Base.Validate.Type.Enum' : function (v) {
+      'Base.Validators.Type.Enum' : function (v) {
         should.exist(v.Type.Enum);
         var val = v.Type.Enum(['lame', 'sauce']);
         assert.isFunction(val);
@@ -339,7 +339,7 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val('sauce') })
         assert.doesNotThrow(function () { val(undefined) })
       },
-      'Base.Validate.Type.Number' : function (v) {
+      'Base.Validators.Type.Number' : function (v) {
         should.exist(v.Type.Number);
         var val = v.Type.Number;
         assert.throws(function () { val(function(){})}, /TYPE-NUMBER/)
@@ -354,7 +354,7 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val(undefined) })
         val.should.equal(val()()());
       },
-      'Base.Validate.Type.Text' : function (v) {
+      'Base.Validators.Type.Text' : function (v) {
         should.exist(v.Type.Text);
         var val = v.Type.Text;
         assert.throws(function () { val({}) }, /TYPE-TEXT/);
@@ -363,7 +363,7 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val(String({})) }, /TYPE-TEXT/)
         val.should.equal(val()()());
       },
-      'Base.Validate.Type.Object' : function (v) {
+      'Base.Validators.Type.Object' : function (v) {
         should.exist(v.Type.Object);
         var val = v.Type.Object;
         assert.throws(function () { val(['l','o','l']) }, /TYPE-OBJECT/)
@@ -372,6 +372,125 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val({}) });
         assert.doesNotThrow(function () { val(undefined) });
         val.should.equal(val()()());
+      }
+    },
+    'schema helpers': {
+      topic: Base.Field,
+      'Base.Field.Id' : function (f) {
+        var spec = f.Id();
+        assert.include(spec, 'sql');
+        spec.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
+        assert.include(spec, 'validators');
+        assert.include(spec.validators, Base.Validators.Type.Number);
+      },
+      'Base.Field.Number' : {
+        'standard fare': function (f) {
+          var spec = f.Number();
+          spec.sql.should.equal('INT');
+          assert.include(spec, 'validators');
+          assert.include(spec.validators, Base.Validators.Type.Number);
+        },
+        'big ones': function (f) {
+          var spec = f.Number('big');
+          spec.sql.should.equal('BIGINT');
+        },
+        'small ones': function (f) {
+          var spec = f.Number('small');
+          spec.sql.should.equal('SMALLINT');
+        },
+        'floats': function (f) {
+          var spec = f.Number('float');
+          spec.sql.should.equal('FLOAT');
+        },
+        'doubles': function (f) {
+          var spec = f.Number('dOuBlE');
+          spec.sql.should.equal('DOUBLE');
+          spec = f.Number({type: 'dOuBlE'});
+          spec.sql.should.equal('DOUBLE');
+          spec = f.Number({size: 'dOuBlE'});
+          spec.sql.should.equal('DOUBLE');
+        },
+        'signed/unsigned': function (f) {
+          var spec = f.Number('small', { unsigned: true });
+          spec.sql.should.equal('SMALLINT UNSIGNED');
+          spec = f.Number('small', { signed: false });
+          spec.sql.should.equal('SMALLINT UNSIGNED');
+          spec = f.Number('small', { signed: true });
+          spec.sql.should.equal('SMALLINT SIGNED');
+        },
+        'unique': function (f) {
+          var spec = f.Number('small', { signed: false, unique: true });
+          spec.sql.should.equal('SMALLINT UNSIGNED UNIQUE');
+        },
+        'null/not null': function (f) {
+          var spec = f.Number('small', { null: false });
+          spec.sql.should.equal('SMALLINT NOT NULL');
+          // #TODO: file bug with should.js about should.include not supporting objects
+          spec.validators.should.include(Base.Validators.Required);
+          spec = f.Number('small', { required: true });
+          spec.sql.should.equal('SMALLINT NOT NULL');
+          spec.validators.should.include(Base.Validators.Required);
+        }
+      },
+      'Base.Field.Text' : {
+        'standard fare': function (f) {
+          var spec = f.Text();
+          spec.sql.should.equal('TEXT');
+          assert.include(spec, 'validators');
+          assert.include(spec.validators, Base.Validators.Type.Text);
+        },
+        'varchar, positional': function (f) {
+          var spec = f.Text(28);
+          spec.sql.should.equal('VARCHAR(28)');
+          assert.include(spec, 'validators');
+          assert.include(spec.validators, Base.Validators.Type.Text);
+          spec.validators.should.have.lengthOf(2);
+          spec.validators[1].meta.name.should.equal('length');
+          spec.validators[1].meta.max.should.equal(28);
+        },
+        'varchar, named': function (f) {
+          var spec = f.Text({size: 28});
+          spec.sql.should.equal('VARCHAR(28)');
+        },
+        'char': function (f) {
+          var spec = f.Text({size: 28, type: 'char'});
+          spec.sql.should.equal('CHAR(28)');
+        },
+        'char without size throws error': function (f) {
+          assert.throws(function () {
+            f.Text({type: 'char', boner: 'fist'});
+          }, /type mismatch.*/);
+        },
+        'longtext': function (f) {
+          var spec = f.Text({size: 'long', type: 'text'});
+          spec.sql.should.equal('LONGTEXT');
+          spec = f.Text({size: 'long'});
+          spec.sql.should.equal('LONGTEXT');
+          spec = f.Text('long');
+          spec.sql.should.equal('LONGTEXT');
+        },
+        'tinytext': function (f) {
+          var spec = f.Text({size: 'tiny', type: 'text'});
+          spec.sql.should.equal('TINYTEXT');
+          spec = f.Text({size: 'tiny'});
+          spec.sql.should.equal('TINYTEXT');
+          spec = f.Text('tiny');
+          spec.sql.should.equal('TINYTEXT');
+        },
+        'unique': function (f) {
+          var spec = f.Text(21, {unique: true});
+          spec.sql.should.equal('VARCHAR(21) UNIQUE');
+          assert.throws(function () {
+            f.Text({unique: true});
+          }, /key/)
+        },
+        'null/not null': function (f) {
+          var spec = f.Text('small', { null: false });
+          spec.sql.should.equal('SMALLTEXT NOT NULL');
+          spec = f.Text({ required: true });
+          spec.sql.should.equal('TEXT NOT NULL');
+          spec.validators.should.include(Base.Validators.Required);
+        }
       }
     }
   }
