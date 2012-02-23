@@ -214,6 +214,15 @@ vows.describe('testing mysql').addBatch({
         m.engine.should.equal('InnoDB');
       }
     },
+    'models have access to client' : function () {
+      var M = Base.extend({});
+      assert.isFunction(M.client.query);
+    },
+    'instances have access to client' : function () {
+      var M = Base.extend({})
+        , m = new M;
+      assert.isFunction(m.client.query);
+    },
     '.parseSchema should': {
       'error on missing schema': function () {
         var M = Base.extend({});
@@ -613,6 +622,12 @@ vows.describe('testing mysql').addBatch({
       }
     },
     '.createTableSql()': {
+      'fails when there is no table': function () {
+        var M = Base.extend({ engine: 'rad'}, { fieldspec: { id: { sql: '1' } } });
+        assert.throws(function () {
+          M.createTableSql();
+        }, /table/);
+      },
       'combines things in the correct order': function () {
         var M = Base.extend({
           table: 'stuff',
