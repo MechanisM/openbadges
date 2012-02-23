@@ -363,13 +363,13 @@ vows.describe('testing mysql').addBatch({
         assert.doesNotThrow(function () { val(undefined) })
         val.should.equal(val()()());
       },
-      'Base.Validators.Type.Text' : function (v) {
-        should.exist(v.Type.Text);
-        var val = v.Type.Text;
-        assert.throws(function () { val({}) }, /TYPE-TEXT/);
-        assert.throws(function () { val(['l','o','l']) }, /TYPE-TEXT/)
-        assert.doesNotThrow(function () { val('lol') }, /TYPE-TEXT/)
-        assert.doesNotThrow(function () { val(String({})) }, /TYPE-TEXT/)
+      'Base.Validators.Type.String' : function (v) {
+        should.exist(v.Type.String);
+        var val = v.Type.String;
+        assert.throws(function () { val({}) }, /type-string/i);
+        assert.throws(function () { val(['l','o','l']) }, /type-string/i)
+        assert.doesNotThrow(function () { val('lol') }, /type-string/i)
+        assert.doesNotThrow(function () { val(String({})) }, /type-string/i)
         val.should.equal(val()()());
       },
       'Base.Validators.Type.Object' : function (v) {
@@ -384,15 +384,15 @@ vows.describe('testing mysql').addBatch({
       }
     },
     'schema helpers': {
-      topic: Base.Field,
-      'Base.Field.Id' : function (f) {
+      topic: Base.Schema,
+      'Base.Schema.Id' : function (f) {
         var spec = f.Id('id')();
         assert.include(spec, 'sql');
         spec.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
         assert.include(spec, 'validators');
         assert.include(spec.validators, Base.Validators.Type.Number);
       },
-      'Base.Field.Number' : {
+      'Base.Schema.Number' : {
         topic: function (f) { return f.Number('n') },
         'standard fare': function (fn) {
           var spec = fn();
@@ -444,19 +444,19 @@ vows.describe('testing mysql').addBatch({
           spec.sql.should.equal('INT DEFAULT 10');
         },
       },
-      'Base.Field.Text' : {
-        topic: function (f) { return f.Text('t') },
+      'Base.Schema.String' : {
+        topic: function (f) { return f.String('t') },
         'standard fare': function (fn) {
           var spec = fn();
           spec.sql.should.equal('TEXT');
           assert.include(spec, 'validators');
-          assert.include(spec.validators, Base.Validators.Type.Text);
+          assert.include(spec.validators, Base.Validators.Type.String);
         },
         'varchar, positional': function (fn) {
           var spec = fn(28);
           spec.sql.should.equal('VARCHAR(28)');
           assert.include(spec, 'validators');
-          assert.include(spec.validators, Base.Validators.Type.Text);
+          assert.include(spec.validators, Base.Validators.Type.String);
           spec.validators.should.have.lengthOf(2);
           spec.validators[1].meta.name.should.equal('length');
           spec.validators[1].meta.max.should.equal(28);
@@ -509,7 +509,7 @@ vows.describe('testing mysql').addBatch({
           spec.validators.should.include(Base.Validators.Required);
         }
       },
-      'Base.Field.Enum' : {
+      'Base.Schema.Enum' : {
         topic: function (f) { return f.Enum('e') },
         'standard fare': function (fn) {
           var spec = fn(['green', 'eggs', 'ham']);
@@ -530,7 +530,7 @@ vows.describe('testing mysql').addBatch({
           spec.sql.should.equal('ENUM ("yo", "la", "tengo") DEFAULT "tengo"');
         }
       },
-      'Base.Field.Foreign' : {
+      'Base.Schema.Foreign' : {
         'basic test' : function (f) {
           var User = Base.extend({
             table: 'user',
@@ -551,7 +551,7 @@ vows.describe('testing mysql').addBatch({
           s.keySql.should.equal(correct.keySql);
         },
       },
-      'Base.Field.Document': {
+      'Base.Schema.Document': {
         topic: function (f) { return f.Document('assertion') },
         'basic test' : function (fn) {
           function intta (s) { return s; }
@@ -585,7 +585,7 @@ vows.describe('testing mysql').addBatch({
           s.validators[0].should.equal(Base.Validators.Required);
         },
       },
-      'Base.Field.Boolean': {
+      'Base.Schema.Boolean': {
         topic: function (f) { return f.Boolean('demo') },
         'basic' : function (fn) {
           var s = fn();
@@ -596,7 +596,7 @@ vows.describe('testing mysql').addBatch({
           s.sql.should.match(/default 1/i)
         }
       },
-      'Base.Field.Timestamp': {
+      'Base.Schema.Timestamp': {
         topic: function (f) { return f.Time('unix') },
         'basic' : function (fn) {
           var s = fn();
