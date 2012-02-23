@@ -523,16 +523,29 @@ vows.describe('testing mysql').addBatch({
         'default': function (f) {
           var spec = f.Enum('e')(['yo', 'la', 'tengo'], { default: 'tengo' });
           spec.sql.should.equal('ENUM ("yo", "la", "tengo") DEFAULT "tengo"');
+        }
+      },
+      'Base.Field.Foreign' : {
+        'basic test' : function (f) {
+          var User = Base.extend({
+            table: 'user',
+            schema: { id : 'BIGINT AUTO_INCREMENT PRIMARY KEY' }
+          })
+          User.parseSchema();
+          var s = f.Foreign('user_id')({
+            model: User,
+            field: 'id'
+          });
+          var correct = {
+            dependsOn: User,
+            sql: "BIGINT",
+            keySql: "FOREIGN KEY `user_fkey` (`user_id`) REFERENCES `user` (`id`)"
+          };
+          s.dependsOn.should.equal(correct.dependsOn);
+          s.sql.should.equal(correct.sql);
+          s.keySql.should.equal(correct.keySql);
         },
-      },
-      
-      'Base.Field.Foreign' : function (f) {
-        var User = Base.extend({
-          schema: { id : 'BIGINT AUTO_INCREMENT PRIMARY KEY' }
-        })
-        User.parseSchema();
-        console.dir(User);
-      },
+      }
     }
   }
 }).export(module);
