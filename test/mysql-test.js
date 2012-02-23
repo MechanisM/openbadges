@@ -237,7 +237,7 @@ vows.describe('testing mysql').addBatch({
       'treat functions as generating objects': function () {
         var M = Base.extend({
           schema: {
-            id: function () { return {sql: 'ya', validators: [], sup: true }; }
+            id: function () { return { sql: 'ya', validators: [], sup: true }; }
           }
         });
         M.parseSchema();
@@ -245,7 +245,7 @@ vows.describe('testing mysql').addBatch({
         spec(M).id.sql.should.equal('ya');
       },
       'handle higher order functions': function () {
-        var hdlr = function () { return function () { return {sql: 'ya' } } };
+        var hdlr = function () { return function () { return { sql: 'ya' } } };
         hdlr.higherOrder = true;
         var M = Base.extend({
           schema: { id: hdlr }
@@ -279,7 +279,7 @@ vows.describe('testing mysql').addBatch({
         var M = Base.extend({
           validators: { id: ['new', 'another'] }
         }, {
-          fieldspec: {id: { validators: ['sup']}}
+          fieldspec: { id: { validators: ['sup']} }
         });
         M.addValidators();
         spec(M).id.validators.should.have.lengthOf(3);
@@ -287,7 +287,92 @@ vows.describe('testing mysql').addBatch({
         spec(M).id.validators[1].should.equal('new');
         spec(M).id.validators[2].should.equal('another');
       }
+    },
+    'validator helpers': {
+      topic: Base.Validate,
+      'Base.Validate.Required': function (v) {
+        should.exist(v.Required);
+        assert.throws(function () { v.Required(null) }, /REQUIRED/)
+        assert.doesNotThrow(function () { v.Required('rad') })
+        assert.isFunction(v.Required()()())
+      },
+      'Base.Validate.Required.when': function (v) {
+        should.exist(v.Required.when);
+        var val = v.Required.when({field:'type', is:'signed'});
+        assert.isFunction(val);
+        assert.throws(function () { val(null, {type: 'signed'}) }, /REQUIRED-WHEN/)
+        assert.doesNotThrow(function () { val(true, {type: 'signed'}) })
+      },
+      'Base.Validate.Length (positional)' : function (v) {
+        should.exist(v.Length);
+        var val = v.Length(4);
+        assert.isFunction(val);
+        assert.throws(function () { val('12345') }, /LENGTH/);
+        assert.doesNotThrow(function () { val('123') }, /LENGTH/);
+        assert.doesNotThrow(function () { val(undefined) })
+      },
+      'Base.Validate.Length (named)' : function (v) {
+        should.exist(v.Length);
+        var val = v.Length({min: 2, max: 4});
+        assert.isFunction(val);
+        assert.throws(function () { val('12345') }, /LENGTH/, 'too many');
+        assert.throws(function () { val('1') }, /LENGTH/, 'too few');
+        assert.doesNotThrow(function () { val('1234') });
+        assert.doesNotThrow(function () { val('12') });
+        assert.doesNotThrow(function () { val(undefined) })
+      },
+      'Base.Validate.Serializable' : function (v) {
+        should.exist(v.Serializable);
+        var val = v.Serializable(JSON.stringify);
+        assert.isFunction(val);
+        assert.throws(function () { val(function(){})}, /SERIALIZABLE/);
+        assert.doesNotThrow(function () {
+          val({ a: 1, b: function(){} });
+        });
+        assert.doesNotThrow(function () { val(undefined) })
+      },
+      'Base.Validate.Type.Enum' : function (v) {
+        should.exist(v.Type.Enum);
+        var val = v.Type.Enum(['lame', 'sauce']);
+        assert.isFunction(val);
+        assert.throws(function () { val('jackrabbit') }, /TYPE-ENUM/)
+        assert.doesNotThrow(function () { val('sauce') })
+        assert.doesNotThrow(function () { val(undefined) })
+      },
+      'Base.Validate.Type.Number' : function (v) {
+        should.exist(v.Type.Number);
+        var val = v.Type.Number;
+        assert.throws(function () { val(function(){})}, /TYPE-NUMBER/)
+        assert.throws(function () { val([1,2,3]); }, /TYPE-NUMBER/)
+        assert.throws(function () { val('nopenopenope') }, /TYPE-NUMBER/)
+        assert.throws(function () { val(NaN) }, /TYPE-NUMBER/)
+        assert.doesNotThrow(function () { val(10) })
+        assert.doesNotThrow(function () { val('10') })
+        assert.doesNotThrow(function () { val('10e1') })
+        assert.doesNotThrow(function () { val(10e1) })
+        assert.doesNotThrow(function () { val(10.10921) })
+        assert.doesNotThrow(function () { val(undefined) })
+        val.should.equal(val()()());
+      },
+      'Base.Validate.Type.Text' : function (v) {
+        should.exist(v.Type.Text);
+        var val = v.Type.Text;
+        assert.throws(function () { val({}) }, /TYPE-TEXT/);
+        assert.throws(function () { val(['l','o','l']) }, /TYPE-TEXT/)
+        assert.doesNotThrow(function () { val('lol') }, /TYPE-TEXT/)
+        assert.doesNotThrow(function () { val(String({})) }, /TYPE-TEXT/)
+        val.should.equal(val()()());
+      },
+      'Base.Validate.Type.Object' : function (v) {
+        should.exist(v.Type.Object);
+        var val = v.Type.Object;
+        assert.throws(function () { val(['l','o','l']) }, /TYPE-OBJECT/)
+        assert.throws(function () { val('just some string') }, /TYPE-OBJECT/);
+        assert.throws(function () { val(function(){}) }, /TYPE-OBJECT/);
+        assert.doesNotThrow(function () { val({}) });
+        assert.doesNotThrow(function () { val(undefined) });
+        val.should.equal(val()()());
+      }
     }
   }
-  
 }).export(module);
