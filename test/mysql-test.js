@@ -454,6 +454,65 @@ vows.describe('testing mysql').addBatch({
         'should return itself until given a value' : function (test) {
           test.should.equal(test()()());
         }
+      },
+      'Base.Validators.Doc' : {
+        'if an entry is required, parent is required' : function (v) {
+          var test = v.Doc({
+            thing: v.Required
+          })
+          test({}).name.should.equal('doc');
+          test({}).errors[0].name.should.equal('required');
+          should.not.exist(test({thing: false}));
+        },
+        'can be nested' : function (v) {
+          var test = v.Doc({
+            thing: v.Doc({
+              otherThing: v.Doc({
+                oneMoreThing: v.Required()
+              })
+            })
+          })
+          test({}).name.should.equal('doc');
+          test({}).errors[0].name.should.equal('doc');
+          test({}).errors[0].errors[0].name.should.equal('doc');
+          test({}).errors[0].errors[0].errors[0].name.should.equal('required');
+        
+        },
+        'errors on subs get the right field name' : function (v) {
+          var test = v.Doc({
+            thing: v.Doc({
+              otherThing: v.Doc({
+                oneMoreThing: v.Required()
+              })
+            })
+          })
+          test({}).name.should.equal('doc');
+          test({}).errors[0].name.should.equal('doc');
+          test({}).errors[0].errors[0].name.should.equal('doc');
+          test({}).errors[0].errors[0].errors[0].field.should.equal('oneMoreThing');
+        },
+        'can get real complicated' : function (v) {
+          // var test = v.Doc({
+          //   recipient: [v.Required, v.Email],
+          //   evidence: v.Regexp,
+          //   expires: v.Regexp,
+          //   issued_on: v.Regexp,
+          //   badge: v.Doc(v.RequireAll, {
+          //     version: v.Regexp,
+          //     name: v.Length(128),
+          //     description: v.Length(128),
+          //     image: v.Regexp,
+          //     criteria: v.Regexp,
+          //     issuer: v.Doc({
+          //       origin: [v.Required, v.Regexp],
+          //       name: [v.Required, v.Length(128)],
+          //       org: v.Length(128),
+          //       contact: v.Email
+          //     })
+          //   })
+          // })
+          // dir(test({}));
+        }
       }
     },
     'schema helpers': {
