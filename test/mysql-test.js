@@ -883,7 +883,6 @@ vows.describe('testing mysql').addBatch({
 }).addBatch({
   'Instance validation': {
     topic: function () {
-      var self = this;
       var M = Base.extend({
         schema: { email: Base.Schema.String({required: true }) },
         validators: {
@@ -928,6 +927,31 @@ vows.describe('testing mysql').addBatch({
         should.exist(err);
         assert.include(err, 'validation');
         err.validation.email.name.should.equal('end-with-io');
+      }
+    }
+  }
+}).addBatch({
+  'Instance mutators': {
+    topic: function () {
+      var M = Base.extend({ schema: { id: Base.Schema.Id, doc: Base.Schema.Document() } })
+      return M;
+    },
+    'model#mutate' : {
+      'should mutate' : function (M) {
+        var m = new M({ doc: { one: 1, two: 2 } });
+        var mattr = m.mutate();
+        should.exist(mattr);
+        mattr.doc.should.equal(JSON.stringify({ one: 1, two: 2 }));
+        m.get('doc').one.should.equal(1);
+      }
+    },
+    'model#demutate' : {
+      'should demutate': function (M) {
+        var m = new M({ doc: { one: 1, two: 2 } });
+        var attr = m.demutate(m.mutate());
+        should.exist(attr);
+        attr.doc.one.should.equal(1);
+        attr.doc.two.should.equal(2);
       }
     }
   }
