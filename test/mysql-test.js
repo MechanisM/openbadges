@@ -985,5 +985,32 @@ vows.describe('testing mysql').addBatch({
       }
     }
   }
+}).addBatch({
+  'Getters and setters': {
+    topic: function () {
+      var M = Base.extend({
+        getters: {
+          money: function (v) { return 'banking' },
+          half: function (v) { return v/2 }
+        },
+        setters: {
+          nums: function (v) {
+            this.attributes.nums = '12345';
+          }
+        }
+      })
+      return M;
+    },
+    'getters get get get': function (M) {
+      var m = new M({ money: 'yah', half: 20 });
+      m.get('money').should.equal('banking');
+      m.get('half').should.equal(10);
+    },
+    'setters set set set': function (M) {
+      var m = new M({});
+      m.set('nums');
+      m.get('nums').should.equal('12345');
+    },
+  }
 }).export(module);
 
