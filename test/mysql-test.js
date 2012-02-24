@@ -955,5 +955,35 @@ vows.describe('testing mysql').addBatch({
       }
     }
   }
+}).addBatch({
+  'Pro saving': {
+    topic: function () {
+      var M = Base.extend({
+        table: 'prosavetest',
+        schema: { id: Base.Schema.Id, doc: Base.Schema.Document() }
+      })
+      M.makeTable();
+      return M;
+    },
+    'a document-laden instance': {
+      topic: function (M) {
+        var bands = new M({ doc: {pollard: 'GBV', shields: 'MBV'}})
+        bands.save(this.callback);
+      },
+      'can be saved just fine': function (err, bands) {
+        bands.get('id').should.equal(1);
+      },
+      'can be retrieved': {
+        topic: function (m) {
+          var M = m.constructor;
+          M.findById(1, this.callback);
+        },
+        'with correct data' : function (err, bands) {
+          bands.get('doc').pollard.should.equal('GBV');
+          bands.get('doc').shields.should.equal('MBV');
+        }
+      }
+    }
+  }
 }).export(module);
 
