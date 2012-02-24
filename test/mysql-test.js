@@ -424,8 +424,36 @@ vows.describe('testing mysql').addBatch({
         },
         'should return itself until given a value' : function (test) {
           test.should.equal(test()()());
+        }
+      },
+      'Base.Validators.Regexp' : {
+        topic: function (v) { return v.Regexp(/blargh/) },
+        'invalid things should return object' : function (test) {
+          function $ (thing) { thing.name.should.equal('regexp') }
+          $(test('roas'))
+          $(test('roaioajsds'))
         },
-
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test('blargh'));
+          $(test('superblargh'));
+        }
+      },
+      'Base.Validators.Email' : {
+        topic: function (v) { return v.Email },
+        'invalid things should return object' : function (test) {
+          function $ (thing) { thing.name.should.equal('email') }
+          $(test('roas'))
+          $(test('roaioajsds'))
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test('blargh@rad.com'));
+          $(test('superblargh@awesome.org'));
+        },
+        'should return itself until given a value' : function (test) {
+          test.should.equal(test()()());
+        }
       }
     },
     'schema helpers': {
@@ -994,9 +1022,7 @@ vows.describe('testing mysql').addBatch({
           half: function (v) { return v/2 }
         },
         setters: {
-          nums: function (v) {
-            this.attributes.nums = '12345';
-          }
+          nums: function (v) { this.attributes.nums = '12345'; }
         }
       })
       return M;
@@ -1013,4 +1039,3 @@ vows.describe('testing mysql').addBatch({
     },
   }
 }).export(module);
-

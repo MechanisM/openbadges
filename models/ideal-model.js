@@ -31,35 +31,49 @@ var Badge = Base.extend({
   //-----------------------------------------------------------------------
   
   schema: {
-    id:           Base.Field.Id,
-    user_id:      Base.Field.Foreign({
+    id:           Base.Schema.Id,
+    user_id:      Base.Schema.Foreign({
       model: User,
       field : 'id',
-      virtual: 'user' // creates a virtual field
     }),
-    type:         Base.Field.Enum(['hosted', 'signed'], { null: false }),
-    endpoint:     Base.Field.Text('tiny'),
-    public_key:   Base.Field.Text,
-    jwt:          Base.Field.Text,
-    image_path:   Base.Field.Text(255, { null: false }),
-    from_demo:    Base.Field.Boolean({ default: 0 }),
-    body:         Base.Field.Document({
+    type:         Base.Schema.Enum(['hosted', 'signed'], { null: false }),
+    endpoint:     Base.Schema.Text('tiny'),
+    public_key:   Base.Schema.Text,
+    jwt:          Base.Schema.Text,
+    image_path:   Base.Schema.Text(255, { null: false }),
+    from_demo:    Base.Schema.Boolean({ default: 0 }),
+    body:         Base.Schema.Document({
       serialize:   JSON.stringify, //default
       deserialize: JSON.parse, // default
       required: true // same thing as null: false
     }),
-    body_hash:    Base.Field.Text(255, { unique: true, null: false }),
-    validated_on: Base.Field.Timestamp({ default: "CURRENT_TIMESTAMP" })
+    body_hash:    Base.Schema.Text(255, { unique: true, null: false }),
+    validated_on: Base.Schema.Timestamp({ default: "CURRENT_TIMESTAMP" })
   },
 
   validators: {
-    endpoint: Base.Validate.Required.when({field: "type", is: "hosted"}),
-    jwt: Base.Validate.Required.when({field: "type", is: "signed"}),
-    public_key: Base.Validate.Required.when({field: "type", is: "signed"}),
-    body: [
-      Base.Validate.Type.Object,
-      Badge.Validate.Body
-    ]
+    endpoint: Base.Validators.Required.when({field: "type", is: "hosted"}),
+    jwt: Base.Validators.Required.when({field: "type", is: "signed"}),
+    public_key: Base.Validator.Required.when({field: "type", is: "signed"}),
+    body: V.Doc({
+      recipient: [V.Required, V.Email],
+      evidence: V.Regexp,
+      expires: V.Regexp,
+      issued_on: V.Regexp,
+      badge: V.Doc(V.RequireAll, {
+        version: V.Regexp,
+        name: V.Length(128),
+        description: V.Length(128),
+        image: V.Regexp,
+        criteria: V.Regexp,
+        issuer: V.Doc({
+          origin: [V.Required, V.Regexp],
+          name: [V.Required, V.Length(128)],
+          org: V.Length(128),
+          contact: V.Email
+        })
+      })
+    })
   },
   
   //==============================================================================
