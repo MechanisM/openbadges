@@ -310,87 +310,122 @@ vows.describe('testing mysql').addBatch({
     'validator helpers': {
       topic: Base.Validators,
       'Base.Validators.Required': function (v) {
-        should.exist(v.Required);
-        assert.throws(function () { v.Required(null) }, /REQUIRED/)
-        assert.doesNotThrow(function () { v.Required('rad') })
+        v.Required(null).name.should.equal('required');
+        should.not.exist(v.Required('rad'));
         assert.isFunction(v.Required()()())
       },
       'Base.Validators.Required.when': function (v) {
-        should.exist(v.Required.when);
-        var val = v.Required.when({field:'type', is:'signed'});
-        assert.isFunction(val);
-        assert.throws(function () { val(null, {type: 'signed'}) }, /REQUIRED-WHEN/)
-        assert.doesNotThrow(function () { val(true, {type: 'signed'}) })
+        var test = v.Required.when({field:'type', is:'signed'})
+          , o = {type: 'signed'}
+        test(null, o).name.should.equal('required-when');
+        should.not.exist(test(true, o));
       },
-      'Base.Validators.Length (positional)' : function (v) {
-        should.exist(v.Length);
-        var val = v.Length(4);
-        assert.isFunction(val);
-        assert.throws(function () { val('12345') }, /LENGTH/);
-        assert.doesNotThrow(function () { val('123') }, /LENGTH/);
-        assert.doesNotThrow(function () { val(undefined) })
+      'Base.Validators.Length (positional)' : {
+        topic: function (v) { return v.Length(4) },
+        'invalid things should return an object' : function (test) {
+          function $ (e) { e.name.should.equal('length') }
+          $(test('12345'));
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test('123'));
+          $(test(undefined));
+        }
       },
-      'Base.Validators.Length (named)' : function (v) {
-        should.exist(v.Length);
-        var val = v.Length({min: 2, max: 4});
-        assert.isFunction(val);
-        assert.throws(function () { val('12345') }, /LENGTH/, 'too many');
-        assert.throws(function () { val('1') }, /LENGTH/, 'too few');
-        assert.doesNotThrow(function () { val('1234') });
-        assert.doesNotThrow(function () { val('12') });
-        assert.doesNotThrow(function () { val(undefined) })
+      'Base.Validators.Length (named)' : {
+        topic: function (v) { return v.Length({min: 2, max: 4}) },
+        'invalid things should return an object' : function (test) {
+          function $ (e) { e.name.should.equal('length') }
+          $(test('12345'));
+          $(test('1'));
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test('1234'));
+          $(test('12'));
+          $(test(undefined));
+        }
       },
-      'Base.Validators.Serializable' : function (v) {
-        should.exist(v.Serializable);
-        var val = v.Serializable(JSON.stringify);
-        assert.isFunction(val);
-        assert.throws(function () { val(function(){})}, /SERIALIZABLE/);
-        assert.doesNotThrow(function () {
-          val({ a: 1, b: function(){} });
-        });
-        assert.doesNotThrow(function () { val(undefined) })
+      'Base.Validators.Serializable' : {
+        topic: function (v) { return v.Serializable(JSON.stringify) },
+        'invalid things should return an object' : function (test) {
+          function $ (e) { e.name.should.equal('serializable') }
+          $(test(function(){}));
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test({ a: 1, b: function(){} }))
+          $(test(undefined));
+        }
       },
-      'Base.Validators.Type.Enum' : function (v) {
-        should.exist(v.Type.Enum);
-        var val = v.Type.Enum(['lame', 'sauce']);
-        assert.isFunction(val);
-        assert.throws(function () { val('jackrabbit') }, /TYPE-ENUM/)
-        assert.doesNotThrow(function () { val('sauce') })
-        assert.doesNotThrow(function () { val(undefined) })
+      'Base.Validators.Type.Enum' : {
+        topic: function (v) { return v.Type.Enum(['lame', 'sauce']) },
+        'invalid things should return an object' : function (test) {
+          function $ (e) { e.name.should.equal('type.enum') }
+          $(test('jackrabbit'));
+          $(test('blargh'));
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test('sauce'));
+          $(test(undefined));
+        }
       },
-      'Base.Validators.Type.Number' : function (v) {
-        should.exist(v.Type.Number);
-        var val = v.Type.Number;
-        assert.throws(function () { val(function(){})}, /TYPE-NUMBER/)
-        assert.throws(function () { val([1,2,3]); }, /TYPE-NUMBER/)
-        assert.throws(function () { val('nopenopenope') }, /TYPE-NUMBER/)
-        assert.throws(function () { val(NaN) }, /TYPE-NUMBER/)
-        assert.doesNotThrow(function () { val(10) })
-        assert.doesNotThrow(function () { val('10') })
-        assert.doesNotThrow(function () { val('10e1') })
-        assert.doesNotThrow(function () { val(10e1) })
-        assert.doesNotThrow(function () { val(10.10921) })
-        assert.doesNotThrow(function () { val(undefined) })
-        val.should.equal(val()()());
+      'Base.Validators.Type.Number' : {
+        topic: function (v) { return v.Type.Number },
+        'invalid things should return an object' : function (test) {
+          function $ (e) { e.name.should.equal('type.number') }
+          $(test(function(){})),
+          $(test([1,2,3])),
+          $(test('nopenopenope')),
+          $(test(NaN))
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test(10))
+          $(test('10'))
+          $(test('10e1'))
+          $(test(10e1))
+          $(test(10.10921))
+          $(test(undefined))
+        },
+        'should return itself until given a value': function (test) {
+          test.should.equal(test()()());
+        }
       },
-      'Base.Validators.Type.String' : function (v) {
-        should.exist(v.Type.String);
-        var val = v.Type.String;
-        assert.throws(function () { val({}) }, /type-string/i);
-        assert.throws(function () { val(['l','o','l']) }, /type-string/i)
-        assert.doesNotThrow(function () { val('lol') }, /type-string/i)
-        assert.doesNotThrow(function () { val(String({})) }, /type-string/i)
-        val.should.equal(val()()());
+      'Base.Validators.Type.String' :{
+        topic: function (v) { return v.Type.String },
+        'invalid things should return object' : function (test) {
+          function $ (thing) { thing.name.should.equal('type.string') }
+          $(test({}));
+          $(test(['l','o','l']));
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test('lol'));
+          $(test(String({})));
+        },
+        'should return itself until given a value' : function (test) {
+          test.should.equal(test()()());
+        }
       },
-      'Base.Validators.Type.Object' : function (v) {
-        should.exist(v.Type.Object);
-        var val = v.Type.Object;
-        assert.throws(function () { val(['l','o','l']) }, /TYPE-OBJECT/)
-        assert.throws(function () { val('just some string') }, /TYPE-OBJECT/);
-        assert.throws(function () { val(function(){}) }, /TYPE-OBJECT/);
-        assert.doesNotThrow(function () { val({}) });
-        assert.doesNotThrow(function () { val(undefined) });
-        val.should.equal(val()()());
+      'Base.Validators.Type.Object' : {
+        topic: function (v) { return v.Type.Object },
+        'invalid things should return object' : function (test) {
+          function $ (thing) { thing.name.should.equal('type.object') }
+          $(test(['l','o','l']));
+          $(test('just some string'));
+          $(test(function(){}));
+        },
+        'valid things should return nothing' : function (test) {
+          function $ (e) { should.not.exist(e) }
+          $(test({}));
+          $(test(undefined));
+        },
+        'should return itself until given a value' : function (test) {
+          test.should.equal(test()()());
+        },
+
       }
     },
     'schema helpers': {
@@ -843,6 +878,36 @@ vows.describe('testing mysql').addBatch({
         results.should.have.lengthOf(3);
         results[0].get('email').should.equal('hey');
       }
+    },
+  }
+}).addBatch({
+  'Instance validation': {
+    topic: function () {
+      var self = this;
+      var M = Base.extend({
+        schema: { email: Base.Schema.String({required: true }) },
+        validators: {
+          email: [
+            function beginWithH(v) { if (!v.match(/^h/)) return { message: 'must begin with h', name: 'beginsWithH' } },
+            function contains(v) { if (!v.match(/sy0/)) return { message: 'must contain sy0', name: 'contains' } },
+            function contains(v) { if (!v.match(/cl1/)) return { message: 'must contain cl1', name: 'contains' } },
+            function contains(v) { if (!v.match(/@/)) return { message: 'must contain @', name: 'contains' } },
+            function endWithIo(v) { if (!v.match(/io$/)) return { message: 'must end with io', name: 'endWithIo' } }
+          ]
+        }
+      })
+      return M;
+    },
+    'model#validate' : {
+      'fail early' : function (M) {
+        var m = new M({});
+        var errors = m.validate();
+        should.exist(errors);
+        assert.include(errors, 'email');
+      },
+      'run in order' : function (M) {},
+      'possible to pass' : function (M) {},
+      'return something sensible' : function (M) {}
     },
   }
 }).export(module);
