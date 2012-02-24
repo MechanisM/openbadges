@@ -820,7 +820,7 @@ vows.describe('testing mysql').addBatch({
       })
       M.makeTable();
       var x = new M({email: 'hey'});
-      var y = new M({email: 'yo'});
+      var y = new M({email: 'yo', other: 'garbage', ruining: 'everything'});
       var z = new M({email: 'sup', eggs: 'lots'});
       
       var callback = _.after(3, function () {
@@ -888,11 +888,11 @@ vows.describe('testing mysql').addBatch({
         schema: { email: Base.Schema.String({required: true }) },
         validators: {
           email: [
-            function beginWithH(v) { if (!v.match(/^h/)) return { message: 'must begin with h', name: 'beginsWithH' } },
+            function beginWithH(v) { if (!v.match(/^h/)) return { message: 'must begin with h', name: 'begins-with-h' } },
             function contains(v) { if (!v.match(/sy0/)) return { message: 'must contain sy0', name: 'contains' } },
             function contains(v) { if (!v.match(/cl1/)) return { message: 'must contain cl1', name: 'contains' } },
             function contains(v) { if (!v.match(/@/)) return { message: 'must contain @', name: 'contains' } },
-            function endWithIo(v) { if (!v.match(/io$/)) return { message: 'must end with io', name: 'endWithIo' } }
+            function endWithIo(v) { if (!v.match(/io$/)) return { message: 'must end with io', name: 'end-with-io' } }
           ]
         }
       })
@@ -905,10 +905,31 @@ vows.describe('testing mysql').addBatch({
         should.exist(errors);
         assert.include(errors, 'email');
       },
-      'run in order' : function (M) {},
-      'possible to pass' : function (M) {},
-      'return something sensible' : function (M) {}
+      'run all the tests': function (M) {
+        var m = new M({email: 'hsy0cl1@what.xxx'});
+        var errors = m.validate();
+        should.exist(errors);
+        assert.ok(errors);
+        assert.include(errors, 'email');
+        errors.email.name.should.equal('end-with-io');
+      },
+      'possible to pass' : function (M) {
+        var m = new M({email: 'hsy0cl1@what.io'});
+        var errors = m.validate();
+        should.not.exist(errors);
+      }
     },
+    'validate on save' : {
+      topic: function (M) {
+        var m = new M({email: 'hsy0cl1@what.xxx'});
+        m.save(this.callback);
+      },
+      'does a fine ass job': function (err, result) {
+        should.exist(err);
+        assert.include(err, 'validation');
+        err.validation.email.name.should.equal('end-with-io');
+      }
+    }
   }
 }).export(module);
 
