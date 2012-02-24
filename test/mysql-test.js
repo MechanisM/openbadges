@@ -655,20 +655,78 @@ vows.describe('testing mysql').addBatch({
       }
     },
     '.makeTable': {
-      'simple table' : {
+      'simple schema' : {
         topic: function () {
           var M = Base.extend({
-            schema: {
-              id: Base.Schema.Id,
-              name: Base.Schema.String
-            }
+            table: 'tesstsajo',
+            schema: { id: Base.Schema.Id, name: Base.Schema.String('long') }
           });
-//          M.parseSchema();
-//          console.dir(M.fieldspec);
           return M;
         },
-        'should not error': function () {
-          assert.ok();
+        'can be saved ': {
+          topic: function (M) {
+            M.prototype.table = 'wuskj';
+            M.makeTable(this.callback);
+          },
+          'without erroring': function (err, result) {
+            assert.ifError(err);
+          }
+        }
+      },
+      'complicated schema' : {
+        topic: function () {
+          var User = Base.extend({
+            schema: {
+              id: Base.Schema.Id,
+              email: Base.Schema.String({ length: 255, unique: true, required: true }),
+              last_login: Base.Schema.Number({ null: true }),
+              active: Base.Schema.Boolean({ default: 1 }),
+              passwd: Base.Schema.String({ length: 255 }),
+              salt: Base.Schema.String({ type: 'blob', length: 'tiny' })
+            }
+          });
+          return User;
+        },
+        'can be saved ': {
+          topic: function (M) {
+            M.prototype.table = 'wuskjjklasd';
+            M.makeTable(this.callback);
+          },
+          'without erroring': function (err, result) {
+            assert.ifError(err);
+          }
+        }
+      },
+      'foreign constrained schema' : {
+        topic: function () {
+          var User = Base.extend({
+            table: 'jlakj9',
+            schema: {
+              id: Base.Schema.Id,
+              email: Base.Schema.String({ length: 255, unique: true, required: true })
+            }
+          });
+          var Badge = Base.extend({
+            schema: {
+              id: Base.Schema.Id,
+              user_id: Base.Schema.Foreign({
+                model: User,
+                field : 'id'
+              }),
+              type: Base.Schema.Enum(['hosted', 'signed'], { null: false })
+            }
+          })
+          return Badge;
+        },
+        'can be saved ': {
+          topic: function (M) {
+            M.prototype.table = 'ohsup';
+            M.parseSchema();
+            M.makeTable(this.callback);
+          },
+          'without erroring': function (err, result) {
+            assert.ifError(err);
+          }
         }
       }
     }
