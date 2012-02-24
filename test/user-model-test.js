@@ -1,5 +1,6 @@
 var vows = require('vows')
   , assert = require('assert')
+  , should = require('should')
   , mysql = require('../lib/mysql')
   , User = require('../models/user');
 
@@ -42,14 +43,14 @@ var assertErrors = function (fields, msgContains) {
       err = res;
       res = null;
     }
-    assert.isNull(res);
-    assert.instanceOf(err, Error);
-    assert.isObject(err.fields);
+    should.not.exist(res);
+    assert.include(err, 'validation');
+    assert.isObject(err.validation);
     fields.forEach(function (f) {
-      assert.includes(err.fields, f);
-      assert.match(err.fields[f], RegExp(f));
+      assert.includes(err.validation, f);
+      assert.match(err.validation[f].name, RegExp(f));
       if (msgContains) {
-        assert.match(err.fields[f], RegExp(msgContains));
+        assert.match(err.validation[f].message, RegExp(msgContains));
       }
     })
   }
@@ -78,28 +79,13 @@ vows.describe('User model').addBatch({
           'without getting mangled data': function (err, user) {
             assert.equal(user.get('email'), 'brian@example.com');
           },
-          'with a salt being created': function (err, user) {
-            assert.isString(user.get('salt'));
-            assert.ok(user.get('salt').length > 5);
-          },
-          'and the password should have been hashed': function (err, user) {
-            assert.notEqual(user.get('passwd'), 'secret');
-          },
-          'and the password can be checked accurately': function (err, user) {
-            assert.isTrue(user.checkPassword('secret'));
-            assert.isFalse(user.checkPassword('not correct'));
-          },
-          'and the password can be changed': function (err, user) {
-            assert.isTrue(user.checkPassword('secret'));
-            assert.isFalse(user.checkPassword('not correct'));
-          }
         }
       }
     },
     'A user can be logged in': {
       topic: function () {
         var user = createUser('logintest@example.com');
-        user.setLoginDate();
+        user.set('login_date');
         user.save(this.callback);
       },
       'and when retrieved again': {
@@ -112,18 +98,12 @@ vows.describe('User model').addBatch({
         }
       }
     },
+    
     'Trying to save a user': {
       'with bogus `recipient`': makeInvalidEmailTests(EMAILS.bad),
       'with valid `recipient`': makeValidEmailTests(EMAILS.good)
     },
-    'A user': {
-      topic: createUser(),
-      'can change her password': function (user) {
-        var newpw = 'whaat';
-        user.changePassword(newpw);
-        assert.isTrue(user.checkPassword(newpw));
-      }
-    },
+    
     'User#findOrCreate': {
       topic: function () {
         var email = 'bad-dudes@example.com';
