@@ -435,9 +435,15 @@ vows.describe('testing mysql').addBatch({
         },
         'valid things should return nothing' : function (test) {
           function $ (e) { should.not.exist(e) }
+          $(test(undefined));
           $(test('blargh'));
           $(test('superblargh'));
-        }
+        },
+        'invalid regexp should throw' : function () {
+          assert.throws(function () {
+            Base.Validators.Regexp({})
+          }, /invalid/);
+        },
       },
       'Base.Validators.Email' : {
         topic: function (v) { return v.Email },
@@ -480,19 +486,30 @@ vows.describe('testing mysql').addBatch({
           test({}).errors[0].name.should.equal('required');
           should.not.exist(test({thing: false}));
         },
+        'can handle array of validators' : function (v) {
+          var test = v.Doc({
+            thing: [v.Require, v.Email]
+          })
+          test({}).name.should.equal('doc');
+          test({}).errors[0].name.should.equal('required');
+          should.not.exist(test({thing: 'wut@lol.com'}));
+        },
         'can be nested' : function (v) {
           var test = v.Doc({
             thing: v.Doc({
               otherThing: v.Doc({
-                oneMoreThing: v.Require()
+                oneMoreThing: [v.Require, v.Email]
               })
             })
           })
-          test({}).name.should.equal('doc');
-          test({}).errors[0].name.should.equal('doc');
-          test({}).errors[0].errors[0].name.should.equal('doc');
-          test({}).errors[0].errors[0].errors[0].name.should.equal('required');
-        
+          var empty = test({});
+          empty.name.should.equal('doc');
+          empty.errors[0].name.should.equal('doc');
+          empty.errors[0].errors[0].name.should.equal('doc');
+          empty.errors[0].errors[0].errors[0].name.should.equal('required');
+          
+          var t = test({thing: {otherThing: {oneMoreThing: 'yep@rad.org'}}});
+          should.not.exist(t);
         },
         'errors on subs get the right field name' : function (v) {
           var test = v.Doc({
@@ -505,29 +522,68 @@ vows.describe('testing mysql').addBatch({
           test({}).name.should.equal('doc');
           test({}).errors[0].name.should.equal('doc');
           test({}).errors[0].errors[0].name.should.equal('doc');
+          test({}).errors[0].errors[0].field.should.equal('otherThing');
           test({}).errors[0].errors[0].errors[0].field.should.equal('oneMoreThing');
         },
-        'can get real complicated' : function (v) {
-          // var test = v.Doc({
-          //   recipient: [v.Require, v.Email],
-          //   evidence: v.Regexp,
-          //   expires: v.Regexp,
-          //   issued_on: v.Regexp,
-          //   badge: v.Doc(v.RequireAll, {
-          //     version: v.Regexp,
-          //     name: v.Length(128),
-          //     description: v.Length(128),
-          //     image: v.Regexp,
-          //     criteria: v.Regexp,
-          //     issuer: v.Doc({
-          //       origin: [v.Require, v.Regexp],
-          //       name: [v.Require, v.Length(128)],
-          //       org: v.Length(128),
-          //       contact: v.Email
-          //     })
-          //   })
-          // })
-          // dir(test({}));
+        'can get real complicated' : {
+          topic: function (v) {
+            var test = v.Doc({
+              recipient: [v.Require, v.Email],
+              evidence: v.Regexp(/w/),
+              expires: v.Regexp(/w/),
+              issued_on: v.Regexp(/w/),
+              badge: v.Doc(v.Require.all({
+                version: v.Regexp(/w/),
+                name: v.Length(128),
+                description: v.Length(128),
+                image: v.Regexp(/w/),
+                criteria: v.Regexp(/w/),
+                issuer: v.Doc({
+                  origin: [v.Require, v.Regexp(/w/)],
+                  name: [v.Require, v.Length(128)],
+                  org: v.Length(128),
+                  contact: v.Email
+                })
+              }))
+            });
+            return test;
+          },
+          'can fail and have all proper failures' : function (test) {
+            function findby(f) { return function(o){ return o.field === f } }
+            function testFor(a, f) { return _.any(a, function (v) { return v.field === f }); }
+            var empty = test({})
+              , level1 = empty.errors
+              , level2 = _.find(level1, findby('badge')).errors
+              , level3 = _.find(level2, findby('issuer')).errors
+            assert.ok(testFor(level1, 'recipient'));
+            assert.ok(testFor(level1, 'badge'));
+            assert.ok(testFor(level2, 'version'));
+            assert.ok(testFor(level2, 'name'));
+            assert.ok(testFor(level2, 'description'));
+            assert.ok(testFor(level2, 'image'));
+            assert.ok(testFor(level2, 'criteria'));
+            assert.ok(testFor(level2, 'issuer'));
+            assert.ok(testFor(level3, 'origin'));
+            assert.ok(testFor(level3, 'name'));
+          },
+          'can pass' : function (test) {
+            var err = test({
+              recipient: 'y@y.com',
+              evidence: 'w',
+              badge: {
+                version: 'w',
+                name: 'w',
+                description: 'w',
+                image: 'w',
+                criteria: 'w',
+                issuer: {
+                  origin: 'w',
+                  name: 'w'
+                }
+              }
+            })
+            should.not.exist(err);
+          }
         }
       }
     },
