@@ -309,13 +309,13 @@ vows.describe('testing mysql').addBatch({
     },
     'validator helpers': {
       topic: Base.Validators,
-      'Base.Validators.Required': function (v) {
-        v.Required(null).name.should.equal('required');
-        should.not.exist(v.Required('rad'));
-        assert.isFunction(v.Required()()())
+      'Base.Validators.Require': function (v) {
+        v.Require(null).name.should.equal('required');
+        should.not.exist(v.Require('rad'));
+        assert.isFunction(v.Require()()())
       },
-      'Base.Validators.Required.when': function (v) {
-        var test = v.Required.when({field:'type', is:'signed'})
+      'Base.Validators.Require.when': function (v) {
+        var test = v.Require.when({field:'type', is:'signed'})
           , o = {type: 'signed'}
         test(null, o).name.should.equal('required-when');
         should.not.exist(test(true, o));
@@ -455,10 +455,26 @@ vows.describe('testing mysql').addBatch({
           test.should.equal(test()()());
         }
       },
+      'Base.Validators.Require.all': {
+        'precedes all validators with Require': function (v) {
+          var validators = {
+            one: [],
+            two: v.Email,
+            three: v.Doc({
+              four: v.Email
+            })
+          }
+          v.Require.all(validators);
+          assert.include(validators.one, v.Require);
+          assert.include(validators.two, v.Require);
+          validators.two[0].should.equal(v.Require);
+          validators.three.meta.name.should.equal('doc');
+        },
+      },
       'Base.Validators.Doc' : {
         'if an entry is required, parent is required' : function (v) {
           var test = v.Doc({
-            thing: v.Required
+            thing: v.Require
           })
           test({}).name.should.equal('doc');
           test({}).errors[0].name.should.equal('required');
@@ -468,7 +484,7 @@ vows.describe('testing mysql').addBatch({
           var test = v.Doc({
             thing: v.Doc({
               otherThing: v.Doc({
-                oneMoreThing: v.Required()
+                oneMoreThing: v.Require()
               })
             })
           })
@@ -482,7 +498,7 @@ vows.describe('testing mysql').addBatch({
           var test = v.Doc({
             thing: v.Doc({
               otherThing: v.Doc({
-                oneMoreThing: v.Required()
+                oneMoreThing: v.Require()
               })
             })
           })
@@ -493,7 +509,7 @@ vows.describe('testing mysql').addBatch({
         },
         'can get real complicated' : function (v) {
           // var test = v.Doc({
-          //   recipient: [v.Required, v.Email],
+          //   recipient: [v.Require, v.Email],
           //   evidence: v.Regexp,
           //   expires: v.Regexp,
           //   issued_on: v.Regexp,
@@ -504,8 +520,8 @@ vows.describe('testing mysql').addBatch({
           //     image: v.Regexp,
           //     criteria: v.Regexp,
           //     issuer: v.Doc({
-          //       origin: [v.Required, v.Regexp],
-          //       name: [v.Required, v.Length(128)],
+          //       origin: [v.Require, v.Regexp],
+          //       name: [v.Require, v.Length(128)],
           //       org: v.Length(128),
           //       contact: v.Email
           //     })
@@ -568,11 +584,11 @@ vows.describe('testing mysql').addBatch({
           var spec = s.Number('small', { null: false })();
           spec.sql.should.equal('SMALLINT NOT NULL');
           // #TODO: file bug with should.js about should.include not supporting objects
-          spec.validators.should.include(Base.Validators.Required);
+          spec.validators.should.include(Base.Validators.Require);
           
           spec = s.Number('small', { required: true })();
           spec.sql.should.equal('SMALLINT NOT NULL');
-          spec.validators.should.include(Base.Validators.Required);
+          spec.validators.should.include(Base.Validators.Require);
         },
         'default': function (s) {
           var spec = s.Number({ default: 10 })();
@@ -648,7 +664,7 @@ vows.describe('testing mysql').addBatch({
           
           spec = s.String({ required: true })();
           spec.sql.should.equal('TEXT NOT NULL');
-          spec.validators.should.include(Base.Validators.Required);
+          spec.validators.should.include(Base.Validators.Require);
         }
       },
       'Base.Schema.Enum' : {
@@ -664,7 +680,7 @@ vows.describe('testing mysql').addBatch({
         'null/not null': function (s) {
           var spec = s.Enum(['yo', 'la', 'tengo'], { required: true })();
           assert.include(spec, 'validators');
-          spec.validators[0].should.equal(Base.Validators.Required);
+          spec.validators[0].should.equal(Base.Validators.Require);
         },
         'default': function (s) {
           var spec = s.Enum(['yo', 'la', 'tengo'], { default: 'tengo' })();
@@ -724,7 +740,7 @@ vows.describe('testing mysql').addBatch({
         'null/not null' : function (s) {
           var ss = s.Document({required: true})();
           ss.sql.should.match(/not null/i);
-          ss.validators[0].should.equal(Base.Validators.Required);
+          ss.validators[0].should.equal(Base.Validators.Require);
         },
       },
       'Base.Schema.Boolean': {

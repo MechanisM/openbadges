@@ -39,4 +39,5 @@ User.findOrCreate = function (email, callback) {
   })
 }
 
+User.makeTable();
 module.exports = User;
