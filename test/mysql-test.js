@@ -4,6 +4,7 @@ var vows = require('vows')
   , mysql = require('../lib/mysql')
   , client = mysql.client
   , Base = mysql.Base
+  , _ = require('underscore')
 
 var qs = function (s) { return s.qs.join(' ') };
 var spec = function (m) { return m.fieldspec };
@@ -457,7 +458,6 @@ vows.describe('testing mysql').addBatch({
         },
       },
       'Base.Schema.String' : {
-        //topic: function (f) { return f.String('t') },
         'standard fare': function (s) {
           var spec = s.String()();
           spec.sql.should.equal('TEXT');
@@ -731,4 +731,119 @@ vows.describe('testing mysql').addBatch({
       }
     }
   }
+}).addBatch({
+  'Base model instances, saving': {
+    'a basic model' : {
+      topic: function () {
+        var M = Base.extend({
+          table: 'ljsaf',
+          schema: { id: Base.Schema.Id, name: Base.Schema.String }
+        });
+        M.makeTable();
+        return M;
+      },
+      'attributes exist' : function (M) {
+        var x = new M({what: 'lol'})
+        should.exist(x.attributes);
+      },
+      'can get attributes' : function (M) {
+        var x = new M({what: 'lol'})
+        x.get('what').should.equal('lol');
+      },
+      'can set attributes' : function (M) {
+        var x = new M({what: 'lol'})
+        x.set('what', 'rad')
+        x.get('what').should.equal('rad');
+      },
+      'can save': {
+        topic: function (M) {
+          var x = new M({name: 'yaaaaaaaaaa'});
+          var self = this;
+          x.save(function (err, inst) {
+            inst.save(function (err, inst) {
+              inst.save(self.callback);
+            });
+          });
+        },
+        'and id gets assigned': function (err, result) {
+          assert.isNumber(result.get('id'));
+        }
+      }
+    }
+  }
+}).addBatch({
+  'Base model, finding': {
+    topic: function () {
+      var self = this;
+      var M = Base.extend({
+        table: 'findtest',
+        schema: {
+          id: Base.Schema.Id,
+          email: Base.Schema.String,
+          eggs: Base.Schema.String
+        }
+      })
+      M.makeTable();
+      var x = new M({email: 'hey'});
+      var y = new M({email: 'yo'});
+      var z = new M({email: 'sup', eggs: 'lots'});
+      
+      var callback = _.after(3, function () {
+        self.callback(null, M);
+      });
+      
+      x.save(callback);
+      y.save(callback);
+      z.save(callback);
+    },
+    '.find, simple' : {
+      topic: function (M) {
+        M.find({email: 'yo'}, this.callback);
+      },
+      'totally works': function (err, results) {
+        assert.ifError(err);
+        results.should.have.lengthOf(1);
+        results[0].get('email').should.equal('yo');
+      }
+    },
+    '.find, advanced' : {
+      topic: function (M) {
+        M.find({email: 'sup', eggs: 'lots'}, this.callback);
+      },
+      'totally works': function (err, results) {
+        assert.ifError(err);
+        results.should.have.lengthOf(1);
+        results[0].get('email').should.equal('sup');
+      }
+    },
+    '.findOne' : {
+      topic: function (M) {
+        M.findOne({email: 'yo'}, this.callback);
+      },
+      'totally works': function (err, res) {
+        assert.ifError(err);
+        res.get('email').should.equal('yo');
+      }
+    },
+    '.findById' : {
+      topic: function (M) {
+        M.findById(1, this.callback);
+      },
+      'totally works': function (err, res) {
+        assert.ifError(err);
+        res.get('email').should.equal('hey');
+      }
+    },
+    '.findAll' : {
+      topic: function (M) {
+        M.findAll(this.callback);
+      },
+      'totally works': function (err, results) {
+        assert.ifError(err);
+        results.should.have.lengthOf(3);
+        results[0].get('email').should.equal('hey');
+      }
+    },
+  }
 }).export(module);
+
