@@ -1,5 +1,8 @@
 var User = require('./user.js')
 var Badge = Base.extend({
+  // says which migration this is on.
+  version: '3',
+  
   table: 'badge',
   
   // default

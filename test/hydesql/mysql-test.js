@@ -1,7 +1,7 @@
 var vows = require('vows')
   , assert = require('assert')
   , should = require('should')
-  , mysql = require('../lib/mysql')
+  , mysql = require('../../lib/mysql')
   , client = mysql.client
   , Base = mysql.Base
   , _ = require('underscore')
@@ -592,7 +592,8 @@ vows.describe('testing mysql').addBatch({
       'Base.Schema.Id' : function (f) {
         var spec = f.Id()('id');
         assert.include(spec, 'sql');
-        spec.sql.should.equal('BIGINT AUTO_INCREMENT PRIMARY KEY');
+        spec.sql.should.equal('BIGINT AUTO_INCREMENT');
+        spec.keysql.should.equal('PRIMARY KEY (`id`)');
         assert.include(spec, 'validators');
         assert.include(spec.validators, Base.Validators.Type.Number);
       },
@@ -633,8 +634,9 @@ vows.describe('testing mysql').addBatch({
           spec.sql.should.equal('SMALLINT SIGNED');
         },
         'unique': function (s) {
-          var spec = s.Number('small', { signed: false, unique: true })();
-          spec.sql.should.equal('SMALLINT UNSIGNED UNIQUE');
+          var spec = s.Number('small', { signed: false, unique: true })('w');
+          spec.sql.should.equal('SMALLINT UNSIGNED');
+          spec.keysql.should.equal('UNIQUE KEY `w` (`w`)');
         },
         'null/not null': function (s) {
           var spec = s.Number('small', { null: false })();
@@ -704,7 +706,8 @@ vows.describe('testing mysql').addBatch({
         },
         'unique with length': function (s) {
           var spec = s.String(21, {unique: true})('t');
-          spec.sql.should.equal('VARCHAR(21) UNIQUE');
+          spec.sql.should.equal('VARCHAR(21)');
+          spec.keysql.should.equal('UNIQUE KEY `t` (`t`)');
           
           assert.throws(function () {
             s.String({unique: true})('t');
@@ -712,7 +715,7 @@ vows.describe('testing mysql').addBatch({
           
           spec = s.String({ unique: 128 })('t');
           assert.include(spec, 'keysql');
-          spec.keysql.should.equal('UNIQUE KEY (t(128))');
+          spec.keysql.should.equal('UNIQUE KEY `t` (`t` (128))');
         },
         'null/not null': function (s) {
           var spec = s.String('small', { null: false })();
@@ -1167,6 +1170,6 @@ vows.describe('testing mysql').addBatch({
       var m = new M({});
       m.set('nums');
       m.get('nums').should.equal('12345');
-    },
+    }
   }
 }).export(module);
