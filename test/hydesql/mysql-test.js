@@ -681,6 +681,10 @@ vows.describe('testing mysql').addBatch({
           var spec = s.String({type: 'blob'})();
           spec.sql.should.equal('BLOB');
         },
+        'blob with default': function (s) {
+          var spec = s.String({type: 'blob', default: 'the blob!'})();
+          spec.sql.should.equal('BLOB DEFAULT "the blob!"');
+        },
         'char without size throws error': function (s) {
           assert.throws(function () {
             s.String({type: 'char'})();

@@ -10,7 +10,10 @@ vows.describe('testing migrations').addBatch({
   'Test some migrations, yo' : {
     topic: function () {
       mysql.prepareTesting();
-      var User = Base.extend({table: 'user'});
+      var User = Base.extend({
+        table: 'user',
+        schema: { id: Base.Schema.Id }
+      });
       return User;
     },
     // 'getCreateTable': function () {
@@ -45,10 +48,6 @@ vows.describe('testing migrations').addBatch({
         var sql = t.getAlterSql('MyISAM', 'engine');
         sql[0].should.equal('ALTER TABLE `user` ENGINE = MyISAM');
       },
-      // 'rename': function (t) {
-      //   var sql = t.getAlterSql({what: 'lol'}, 'rename');
-      //   sql.should.equal('ALTER TABLE `user` CHANGE `what` `lol`');
-      // },
       'add key': function (t) {
         var sql = t.getAlterSql({yeah: { type: 'unique' }}, 'add key')
         sql[0].should.equal('ALTER TABLE `user` ADD UNIQUE KEY `yeah` (`yeah`)');
@@ -59,6 +58,16 @@ vows.describe('testing migrations').addBatch({
         sql = t.getAlterSql({yeah: { type: 'unique', name: 'yo', length: 128 }}, 'add key')
         sql[0].should.equal('ALTER TABLE `user` ADD UNIQUE KEY `yeah` (`yo` (128))');
       }
+    },
+    'addColumn' : {
+      topic: function (User) {
+        var t = Base.Migration(User);
+        t.addColumn({emperor: Base.Schema.String({default: 'x'})}, this.callback);
+      },
+      'does what it says on the tin' : function (err, result) {
+        assert.ifError(err);
+        result.affectedRows.should.equal(1);
+      },
     }
   }
 }).export(module);
